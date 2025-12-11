@@ -1,0 +1,45 @@
+# 忽略Python虚拟环境目录
+venv/
+
+# 忽略Python编译缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 忽略环境变量和配置文件（保护API密钥！）
+.env
+config.py
+# 如果你将config.py重命名为其他名字，请在这里补充
+
+# 忽略IDE和编辑器配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 忽略系统文件
+.DS_Store
+Thumbs.db
+
+# 忽略SQLite数据库（如果你后续使用了）
+*.db
+*.sqlite3
+# Python virtualenv
+venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite database
+chat_history.db
+
+# VSCode settings
+.vscode/
+
+# Environment files
+.env
+
+# Logs
+*.log

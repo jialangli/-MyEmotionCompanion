@@ -1,0 +1,86 @@
+# app.py - Flask主应用文件
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import config
+
+# 初始化Flask应用
+app = Flask(__name__)
+app.config.from_object(config)
+
+# 启用CORS（跨域资源共享），方便前后端分离开发
+CORS(app)
+
+# 根路由 - 用于测试服务器是否正常运行
+@app.route('/')
+def home():
+    return '''
+    <h1>MyEmotionCompanion 情感陪伴程序</h1>
+    <p>后端服务已成功启动！</p>
+    <p>可用接口：</p>
+    <ul>
+        <li><a href="/api/test">/api/test</a> - 测试接口</li>
+        <li><a href="/api/chat">/api/chat</a> - 聊天接口（POST）</li>
+    </ul>
+    <p>请使用POSTMAN或前端页面调用聊天接口。</p>
+    '''
+
+# 测试接口 - GET请求
+@app.route('/api/test', methods=['GET'])
+def test_api():
+    return jsonify({
+        'status': 'success',
+        'message': 'API接口工作正常！',
+        'service': 'MyEmotionCompanion Backend',
+        'version': '1.0.0'
+    })
+
+# 聊天接口 - POST请求
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    """接收用户消息并返回回复（目前是模拟回复）"""
+    try:
+        # 获取JSON格式的请求数据
+        data = request.json
+        
+        if not data or 'message' not in data:
+            return jsonify({
+                'error': '请提供message参数'
+            }), 400
+        
+        user_message = data.get('message', '')
+        
+        # 这里暂时返回模拟回复，下一阶段会接入真正的AI
+        ai_reply = f"我收到了你的消息：'{user_message}'。\n"
+        ai_reply += "这是一个模拟回复，下一阶段将接入DeepSeek AI。\n"
+        ai_reply += "你的情感陪伴助手正在准备中..."
+        
+        return jsonify({
+            'reply': ai_reply,
+            'status': 'success',
+            'message_length': len(user_message)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'服务器内部错误: {str(e)}'
+        }), 500
+
+# 健康检查接口
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'healthy'}), 200
+
+if __name__ == '__main__':
+    print("=" * 50)
+    print("MyEmotionCompanion 情感陪伴程序")
+    print("服务器启动中...")
+    print(f"调试模式: {app.config.get('DEBUG', False)}")
+    print("访问地址: http://127.0.0.1:5000")
+    print("=" * 50)
+    
+    # 启动Flask开发服务器
+    app.run(
+        host='0.0.0.0',  # 允许所有IP访问
+        port=5000,        # 端口号
+        debug=app.config.get('DEBUG', True)
+    )

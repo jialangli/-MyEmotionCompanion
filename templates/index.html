@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情感陪伴 - MyEmotionCompanion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, '微软雅黑', '宋体';
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.ai {
+            justify-content: flex-start;
+        }
+
+        .message-text {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            word-wrap: break-word;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .user .message-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 0 15px 15px;
+        }
+
+        .ai .message-text {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-radius: 0 15px 15px 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .loading-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #999;
+            animation: blink 1.4s infinite;
+        }
+
+        .loading-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0%, 60%, 100% {
+                opacity: 0.3;
+            }
+            30% {
+                opacity: 1;
+            }
+        }
+
+        .input-area {
+            padding: 15px 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            border-radius: 0 0 20px 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-field {
+            flex: 1;
+            border: 1px solid #e0e0e0;
+            border-radius: 25px;
+            padding: 10px 16px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-field:focus {
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .info-bar {
+            padding: 8px 20px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            font-size: 12px;
+            border-bottom: 1px solid #c8e6c9;
+            text-align: center;
+        }
+
+        /* 滚动条美化 */
+        .chat-box::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-box::-webkit-scrollbar-track {
+            background: #f8f9fa;
+        }
+
+        .chat-box::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+
+        .chat-box::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+            gap: 10px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💕 情感陪伴伙伴</h1>
+            <p>你的专属女朋友，随时陪伴你</p>
+        </div>
+
+        <div class="info-bar">
+            会话 ID: <span id="sessionId">loading...</span> | 消息数: <span id="msgCount">0</span>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            <div class="empty-state">
+                <div class="empty-state-icon">👋</div>
+                <div>和我聊天吧～</div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input 
+                type="text" 
+                class="input-field" 
+                id="messageInput" 
+                placeholder="和宝说点什么呀～"
+                autocomplete="off"
+            >
+            <button class="send-btn" id="sendBtn">📤</button>
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const CONFIG = {
+            apiUrl: 'http://127.0.0.1:5000/api/chat',
+            sessionId: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            maxRetries: 3,
+            retryDelay: 1000
+        };
+
+        // DOM 元素
+        const chatBox = document.getElementById('chatBox');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const sessionIdSpan = document.getElementById('sessionId');
+        const msgCountSpan = document.getElementById('msgCount');
+
+        // 状态
+        let messageCount = 0;
+        let isLoading = false;
+
+        // 初始化
+        function init() {
+            sessionIdSpan.textContent = CONFIG.sessionId;
+            messageInput.focus();
+            setupEventListeners();
+        }
+
+        // 事件监听
+        function setupEventListeners() {
+            sendBtn.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !isLoading) {
+                    sendMessage();
+                }
+            });
+        }
+
+        // 清空聊天区域提示
+        function clearEmptyState() {
+            if (chatBox.querySelector('.empty-state')) {
+                chatBox.innerHTML = '';
+            }
+        }
+
+        // 添加消息到聊天框
+        function addMessageToChat(content, isUser = false) {
+            clearEmptyState();
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.textContent = content;
+            
+            messageDiv.appendChild(textDiv);
+            chatBox.appendChild(messageDiv);
+            
+            // 自动滚到底部
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // 显示加载状态
+        function showLoading() {
+            clearEmptyState();
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai';
+            messageDiv.id = 'loadingMessage';
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.innerHTML = '<div class="loading"><span>思考中</span><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+            
+            messageDiv.appendChild(textDiv);
+            chatBox.appendChild(messageDiv);
+            
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // 移除加载状态
+        function removeLoading() {
+            const loadingMsg = document.getElementById('loadingMessage');
+            if (loadingMsg) {
+                loadingMsg.remove();
+            }
+        }
+
+        // 发送消息
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            
+            if (!message || isLoading) return;
+            
+            isLoading = true;
+            sendBtn.disabled = true;
+            
+            // 添加用户消息
+            addMessageToChat(message, true);
+            messageInput.value = '';
+            messageCount++;
+            updateMessageCount();
+            
+            // 显示加载状态
+            showLoading();
+            
+            try {
+                // 调用 API
+                const response = await fetchWithRetry(CONFIG.apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: CONFIG.sessionId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    removeLoading();
+                    addMessageToChat(data.reply, false);
+                    messageCount++;
+                    updateMessageCount();
+                } else {
+                    removeLoading();
+                    addMessageToChat('抱歉，出了点问题呢～', false);
+                }
+            } catch (error) {
+                removeLoading();
+                console.error('Error:', error);
+                addMessageToChat(`连接出错了呀～(${error.message})`, false);
+            } finally {
+                isLoading = false;
+                sendBtn.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        // 带重试的 fetch
+        async function fetchWithRetry(url, options, retries = CONFIG.maxRetries) {
+            try {
+                return await fetch(url, options);
+            } catch (error) {
+                if (retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, CONFIG.retryDelay));
+                    return fetchWithRetry(url, options, retries - 1);
+                }
+                throw error;
+            }
+        }
+
+        // 更新消息计数
+        function updateMessageCount() {
+            msgCountSpan.textContent = messageCount;
+        }
+
+        // 启动
+        init();
+    </script>
+</body>
+</html>
