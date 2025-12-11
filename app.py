@@ -150,6 +150,13 @@ def chat():
             except Exception as e:
                 print(f"[情感分析] 失败: {e}")
                 emotion_data = None
+
+        # 调试信息：打印分析器对象及最终 emotion_data 值，便于追查为何未返回到前端
+        try:
+            print(f"[Debug] emotion_analyzer 对象: {emotion_analyzer}")
+            print(f"[Debug] emotion_data 最终值: {emotion_data}")
+        except Exception:
+            pass
         
         # 调用AI服务，并传递情感数据作为额外上下文
         # AI 会根据用户情绪状态调整回复方式
@@ -163,13 +170,19 @@ def chat():
         # 重新读取当前历史长度以返回给客户端
         history = get_session_history_db(session_id)
         
-        return jsonify({
+        response_payload = {
             'reply': ai_reply,
             'status': 'success',
             'session_id': session_id,
             'history_length': len(history),
-            'emotion': emotion_data  # 返回情感分析结果给前端（可选）
-        })
+            'emotion': emotion_data,  # 返回情感分析结果给前端（可选）
+            'emotion_type': type(emotion_data).__name__ if emotion_data is not None else 'NoneType'
+        }
+        try:
+            print(f"[Debug] 返回给客户端的 payload: {response_payload}")
+        except Exception:
+            pass
+        return jsonify(response_payload)
         
     except Exception as e:
         print(f"[App] 错误: {e}")

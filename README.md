@@ -54,6 +54,53 @@ SECRET_KEY=replace-with-random-secret
 
 （注意：如果你使用不同的变量名或配置文件，请相应修改 `config.py`。）
 
+## 安全与密钥管理（不要把 Key 写进代码）
+
+强烈建议不要把 `API Key`、`Secret Key` 等敏感信息直接写入源码或提交到远程仓库。推荐做法：
+
+- 在项目根使用 `.env` 文件保存敏感变量，并把 `.env` 写入 `.gitignore`（仓库已包含此项）。
+- 在 `config.py` 中使用 `python-dotenv` 或直接读取环境变量，示例：
+
+```python
+from dotenv import load_dotenv
+import os
+
+# 在模块加载时显式加载项目根目录下的 .env
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
+BAIDU_API_KEY = os.getenv('BAIDU_API_KEY')
+BAIDU_SECRET_KEY = os.getenv('BAIDU_SECRET_KEY')
+```
+
+- 如果不慎将密钥提交到 Git 仓库，请尽快：
+	1. 从远程历史中移除敏感文件（示例命令，会修改历史，谨慎操作）：
+
+```bash
+# 从最新提交中删除 .env 并提交（保留本地文件）
+git rm --cached .env
+git commit -m "remove .env from repo"
+git push origin main
+
+# 若密钥已出现在历史提交中，使用 recommended 工具 清理历史（示例）
+# 推荐使用: https://github.com/newren/git-filter-repo 或 BFG
+# 例如（使用 git-filter-repo）：
+# git filter-repo --path .env --invert-paths
+```
+
+	2. 立即在相应服务/平台（DeepSeek、Baidu 等）上撤销并重新生成新的密钥（密钥轮换）。不要继续使用已泄露的密钥。
+
+- 为方便协作，推荐提交一个 `.env.example`（不包含真实密钥），示例：
+
+```text
+DEEPSEEK_API_KEY=sk-REPLACE_WITH_YOURS
+BAIDU_API_KEY=REPLACE_WITH_YOURS
+BAIDU_SECRET_KEY=REPLACE_WITH_YOURS
+SECRET_KEY=replace-with-random-secret
+```
+
+如果需要，我可以帮助你生成用于从 Git 历史中删除已提交密钥的命令示例（按照你的偏好使用 `git-filter-repo` 或 `bfg-repo-cleaner`），以及一份密钥轮换与通知的操作清单。
+
 ## 本地运行
 
 激活虚拟环境后运行：
@@ -126,6 +173,64 @@ pytest -q
 - 页面提示 `Failed to fetch`：确认 Flask 服务是否运行（`http://127.0.0.1:5000/health`），并检查浏览器是否使用了代理或 CORS 设置。
 - `.env` 未加载：确认 `python-dotenv` 已安装并且 `.env` 文件位于项目根；`config.py` 使用 `load_dotenv(path)` 明确加载。
 - 端口被占用或进程异常退出：检查端口（`netstat -ano | findstr :5000`）并查看 `app.py` 的启动日志。
+
+## 运行与调试（情感分析专用提示）
+
+如果你发现前端或 API 返回中缺少 `emotion` 字段，按下面步骤排查：
+
+- 确认服务实例：可能存在旧的多个 Flask 进程并行运行，导致请求由未加载最新代码的旧实例处理。查看并结束旧进程：
+
+```bash
+# 列出占用 5000 端口的进程（Windows）
+netstat -ano | findstr :5000
+# 使用任务管理器或 taskkill 结束指定 PID：
+taskkill /PID <PID> /F
+```
+
+- 检查 `flask_output.log`（或你启动时指定的日志文件）以查看 `情感分析` 或 `Debug` 打印是否存在：
+
+```bash
+tail -n 200 flask_output.log
+```
+
+- 直接在 Python REPL 中测试情感分析器是否可用（在虚拟环境下运行）：
+
+```bash
+source venv/Scripts/activate
+python - <<'PY'
+from services.emotion_analyzer import BaiduEmotionAnalyzer
+import config
+an = BaiduEmotionAnalyzer(config.BAIDU_API_KEY, config.BAIDU_SECRET_KEY)
+print(an.analyze_emotion('我今天很难过'))
+PY
+```
+
+- 如果情感分析器返回 `None` 或回退到中性，这是网络/密钥或百度 API 可用性导致的正常回退行为；应用会仍然返回 AI 回复，但 `emotion` 可能为空或为回退值。
+
+- 为避免未来出现多进程冲突，推荐使用进程管理器或 PID 文件（见“生产建议”小节）。
+
+## 生产建议（进程管理与自动重启）
+
+开发时直接运行 `python app.py` 足够，但在线上建议使用 WSGI 进程管理：
+
+- 使用 `gunicorn`（Linux）：
+
+```bash
+pip install gunicorn
+gunicorn -w 4 -b 0.0.0.0:8000 app:app
+```
+
+- Windows 平台可用 `waitress-serve` 或将应用容器化（Docker）。示例 `waitress`：
+
+```bash
+pip install waitress
+waitress-serve --listen=0.0.0.0:5000 app:app
+```
+
+- 使用 `systemd` 或 `supervisord` 管理 Gunicorn，可确保单实例、自动重启以及日志收集。
+
+（如需，我可以为你生成 `systemd` unit 文件或 `supervisord` 配置样例。）
+
 
 ### Git 网络问题与解决（常见命令）
 
