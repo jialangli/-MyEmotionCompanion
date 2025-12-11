@@ -294,24 +294,25 @@
             background: rgba(255,255,255,0.12);
             border: 1px solid rgba(255,255,255,0.18);
             color: white;
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            border-radius: 50%;
+            padding: 8px 15px;
+            border-radius: 20px; /* 胶囊形状 */
+            width: auto; /* 自适应宽度 */
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            gap: 8px;
             z-index: 20;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-            transition: transform 0.15s ease, background 0.15s ease;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            transition: transform 0.12s ease, background 0.12s ease;
+            font-size: 14px;
+            font-weight: 600;
         }
         .theme-toggle:focus { outline: none; }
         .theme-toggle:hover { transform: translateY(-2px); }
 
-        .theme-icon { font-size: 18px; line-height: 1; }
-
-        .visually-hidden { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
+        .theme-icon { font-size: 16px; line-height: 1; }
+        .theme-text { display: inline-block; }
 
         .emotion-icon {
             font-size: 20px;
@@ -405,9 +406,9 @@
         <div class="header">
             <h1>💕 情感陪伴伙伴</h1>
             <p>你的专属女朋友，随时陪伴你</p>
-            <button id="themeToggle" class="theme-toggle" aria-label="切换主题" title="切换主题">
+            <button id="themeToggle" class="theme-toggle" title="切换主题">
                 <span id="themeIcon" class="theme-icon">🌙</span>
-                <span class="visually-hidden">切换主题</span>
+                <span class="theme-text">夜间模式</span>
             </button>
         </div>
 
@@ -503,14 +504,17 @@
         function applyTheme(name) {
             const iconEl = document.getElementById('themeIcon');
             const btn = document.getElementById('themeToggle');
+            const textEl = document.querySelector('.theme-text');
             if (name === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
                 if (iconEl) iconEl.textContent = '☀️';
                 if (btn) btn.title = '切换到日间主题';
+                if (textEl) textEl.textContent = '日间模式';
             } else {
                 document.documentElement.removeAttribute('data-theme');
                 if (iconEl) iconEl.textContent = '🌙';
                 if (btn) btn.title = '切换到夜间主题';
+                if (textEl) textEl.textContent = '夜间模式';
             }
             localStorage.setItem('theme', name);
         }
