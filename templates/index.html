@@ -285,6 +285,65 @@
             font-size: 11px;
             color: #999;
         }
+
+        /* 消息状态指示器 */
+        .message-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .status-icon {
+            font-size: 10px;
+        }
+
+        .message-timestamp {
+            font-size: 10px;
+            color: #bbb;
+        }
+
+        /* 打字效果 */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 16px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                opacity: 0.4;
+                transform: translateY(0);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-10px);
+            }
+        }
+
+        /* 逐字出现动画 */
+        .message-text.typing-text {
+            min-height: 20px;
+        }
     </style>
 </head>
 <body>
@@ -351,6 +410,7 @@
         let messageCount = 0;
         let isLoading = false;
         let lastEmotion = null;
+        let currentTypingMessage = null;
         
         // 情感图标映射
         const emotionIconMap = {
@@ -403,13 +463,55 @@
             
             const textDiv = document.createElement('div');
             textDiv.className = 'message-text';
-            textDiv.textContent = content;
+            textDiv.innerHTML = `<span>${escapeHtml(content)}</span>`;
             
             messageDiv.appendChild(textDiv);
+
+            // 为用户消息添加状态指示
+            if (isUser) {
+                const statusDiv = document.createElement('div');
+                statusDiv.className = 'message-status';
+                statusDiv.innerHTML = `
+                    <span class="status-icon">✓</span>
+                    <span class="status-label">已发送</span>
+                    <span class="message-timestamp">${getCurrentTime()}</span>
+                `;
+                messageDiv.appendChild(statusDiv);
+            }
+            
             chatBox.appendChild(messageDiv);
             
             // 自动滚到底部
             chatBox.scrollTop = chatBox.scrollHeight;
+
+            return messageDiv;
+        }
+
+        // HTML 转义函数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 获取当前时间（HH:MM 格式）
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // 逐字显示消息（打字效果）
+        async function typeMessage(container, content, speed = 50) {
+            const textSpan = container.querySelector('span');
+            textSpan.textContent = '';
+            container.classList.add('typing-text');
+            
+            for (let i = 0; i < content.length; i++) {
+                textSpan.textContent += content[i];
+                await new Promise(resolve => setTimeout(resolve, speed));
+            }
+            
+            container.classList.remove('typing-text');
         }
 
         // 显示加载状态
@@ -422,7 +524,7 @@
             
             const textDiv = document.createElement('div');
             textDiv.className = 'message-text';
-            textDiv.innerHTML = '<div class="loading"><span>思考中</span><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+            textDiv.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div><span style="margin-left: 8px; color: #999;">思考中...</span>';
             
             messageDiv.appendChild(textDiv);
             chatBox.appendChild(messageDiv);
@@ -505,13 +607,36 @@
                 
                 if (data.status === 'success') {
                     removeLoading();
-                    addMessageToChat(data.reply, false);
-                    
+
+                    // 创建 AI 消息容器并添加打字效果
+                    clearEmptyState();
+                    const aiMessageDiv = document.createElement('div');
+                    aiMessageDiv.className = 'message ai';
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'message-text';
+                    textDiv.innerHTML = '<span></span>';
+                    aiMessageDiv.appendChild(textDiv);
+                    chatBox.appendChild(aiMessageDiv);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+
+                    // 执行打字动画
+                    await typeMessage(textDiv, data.reply, 40);
+
+                    // 添加已读状态
+                    const statusDiv = document.createElement('div');
+                    statusDiv.className = 'message-status';
+                    statusDiv.innerHTML = `
+                        <span class="status-icon">✓✓</span>
+                        <span class="status-label">已读</span>
+                        <span class="message-timestamp">${getCurrentTime()}</span>
+                    `;
+                    aiMessageDiv.appendChild(statusDiv);
+
                     // 显示情感分析结果（如果有）
                     if (data.emotion) {
                         displayEmotion(data.emotion);
                     }
-                    
+
                     messageCount++;
                     updateMessageCount();
                 } else {
