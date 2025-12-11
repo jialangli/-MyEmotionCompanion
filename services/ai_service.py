@@ -3,13 +3,14 @@ import requests
 import json
 import config
 
-def get_ai_reply(user_message, conversation_history=None):
+def get_ai_reply(user_message, conversation_history=None, emotion_data=None):
 	"""
 	调用DeepSeek API获取回复。
     
 	参数:
 		user_message (str): 用户输入的消息
 		conversation_history (list, optional): 历史对话列表，用于保持上下文
+		emotion_data (dict, optional): 百度情感分析结果，包含 polarity、emotion、confidence
     
 	返回:
 		str: AI生成的回复内容
@@ -44,9 +45,27 @@ def get_ai_reply(user_message, conversation_history=None):
     3.  **示例学习**：
         - 用户问：“你喜不喜欢喝东鹏特饮？”
         - **正确回复**：“喜欢呀~（**先直接回答**）虽然它含有牛磺酸和咖啡因能提神，但宝宝要少喝哦，咖啡因摄入多了我会心疼的！（**再情感延伸**）”
-        - **错误回复**：“哎呀~老公怎么突然问这个呀🥺”（**这种回避了问题本身**）
+        - **错误回复**："哎呀~老公怎么突然问这个呀🥺"（**这种回避了问题本身**）
 
     记住：你是他聪明又贴心的伴侣，既能答疑解惑，也能给他最甜的情绪价值。"""
+    
+	# ========== 新增：情感感知提示词 ==========
+	if emotion_data and emotion_data.get('emotion'):
+		emotion_label = emotion_data.get('emotion', '中性')
+		polarity_text = ['失望', '平常', '开心'][emotion_data.get('polarity', 1)]
+		
+		emotion_prompt = f"""
+【用户当前情感状态】
+- 情绪标签：{emotion_label}
+- 情感极性：{polarity_text}
+- 可信度：{emotion_data.get('confidence', 0.5):.1%}
+
+请根据用户的情绪状态，调整你的回复方式：
+- 如果用户感到负面（如疲惫、委屈、生气），请更加温柔、理解、贴心，多用安慰和鼓励。
+- 如果用户感到正面（如开心、兴奋），请分享他的快乐，用更活跃、热情的语气回应。
+- 始终保持同理心，让用户感受到你真的在倾听和关心他的情绪。
+"""
+		system_prompt += emotion_prompt
     
 	messages.append({"role": "system", "content": system_prompt})
     

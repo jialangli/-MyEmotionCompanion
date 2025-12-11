@@ -151,18 +151,9 @@ def chat():
                 print(f"[情感分析] 失败: {e}")
                 emotion_data = None
         
-        # 如果有情感分析结果，可在调用AI时作为额外上下文
-        # （可选：把情感标签加到system prompt或消息中）
-        if emotion_data:
-            emotion_context = f"\n[用户情绪信息] 情绪：{emotion_data['emotion']}，极性：{['负面', '中性', '正面'][emotion_data['polarity']]}（置信度：{emotion_data['confidence']:.2f}）"
-        else:
-            emotion_context = ""
-        
-        # 调用真正的AI服务！
-        ai_reply = get_ai_reply(user_message, history)
-        
-        # 如果有情感分析结果，可在回复中加入情感感知的后缀（可选）
-        # ai_reply += f"\n[AI感知] 我察觉到你现在感到{emotion_data['emotion']}..."
+        # 调用AI服务，并传递情感数据作为额外上下文
+        # AI 会根据用户情绪状态调整回复方式
+        ai_reply = get_ai_reply(user_message, history, emotion_data=emotion_data)
         
         # 持久化到数据库（保存用户消息和AI回复）
         save_message(session_id, 'user', user_message)
