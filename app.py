@@ -1,13 +1,20 @@
-# app.py - Flask主应用文件（集成AI服务版）
+# app.py - Flask主应用文件（集成AI服务版 + 百度情感分析）
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import config
 from services.ai_service import get_ai_reply
+from services.emotion_analyzer import BaiduEmotionAnalyzer
 import sqlite3
 import os
 
 # 数据库文件（项目根目录）
 DB_PATH = os.path.join(os.path.dirname(__file__), 'chat_history.db')
+
+# 初始化百度情感分析器（如果API Key已配置）
+emotion_analyzer = None
+if config.BAIDU_API_KEY and config.BAIDU_SECRET_KEY:
+    emotion_analyzer = BaiduEmotionAnalyzer(config.BAIDU_API_KEY, config.BAIDU_SECRET_KEY)
+
 
 
 def init_db():
@@ -119,7 +126,7 @@ def test_api():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """接收用户消息并调用真正的AI回复"""
+    """接收用户消息，进行情感分析，并调用AI生成回复"""
     try:
         data = request.json
         
@@ -134,8 +141,28 @@ def chat():
         
         print(f"[App] 收到消息: '{user_message[:30]}...' (会话: {session_id}, 历史长度: {len(history)})")
         
+        # ========== 新增：情感分析 ==========
+        emotion_data = None
+        if emotion_analyzer:
+            try:
+                emotion_data = emotion_analyzer.analyze_emotion(user_message)
+                print(f"[情感分析] 结果: {emotion_data}")
+            except Exception as e:
+                print(f"[情感分析] 失败: {e}")
+                emotion_data = None
+        
+        # 如果有情感分析结果，可在调用AI时作为额外上下文
+        # （可选：把情感标签加到system prompt或消息中）
+        if emotion_data:
+            emotion_context = f"\n[用户情绪信息] 情绪：{emotion_data['emotion']}，极性：{['负面', '中性', '正面'][emotion_data['polarity']]}（置信度：{emotion_data['confidence']:.2f}）"
+        else:
+            emotion_context = ""
+        
         # 调用真正的AI服务！
         ai_reply = get_ai_reply(user_message, history)
+        
+        # 如果有情感分析结果，可在回复中加入情感感知的后缀（可选）
+        # ai_reply += f"\n[AI感知] 我察觉到你现在感到{emotion_data['emotion']}..."
         
         # 持久化到数据库（保存用户消息和AI回复）
         save_message(session_id, 'user', user_message)
@@ -149,7 +176,8 @@ def chat():
             'reply': ai_reply,
             'status': 'success',
             'session_id': session_id,
-            'history_length': len(history)
+            'history_length': len(history),
+            'emotion': emotion_data  # 返回情感分析结果给前端（可选）
         })
         
     except Exception as e:
