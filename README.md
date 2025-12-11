@@ -324,3 +324,18 @@ printf "protocol=https\nhost=github.com\n" | git credential-reject
 欢迎提出 Issue 或 PR 来改进功能、修复 bug 或补充文档。你可以在仓库中直接创建分支并发起 PR。
 
 如果你希望我为仓库添加更多示例（例如 Dockerfile、更多测试或自动部署工作流），告诉我你的目标平台，我可以继续实现。
+
+## 前端更新（主题切换）
+
+- **位置**: 主题切换按钮位于网页右上角的标题栏内（在 `templates/index.html` 的 header 区域）。元素 ID 为 `themeToggle`，图标元素 ID 为 `themeIcon`，文本部分类名为 `.theme-text`。
+- **外观**: 当前为长方形胶囊型按钮（图标 + 文本），能在“日间/夜间”两种主题之间切换，并将选择保存在浏览器的 `localStorage`（键名 `theme`）。
+- **使用**: 点击按钮即可切换主题；刷新页面后会保留上次选择。如果看不到更新的按钮，按 `Ctrl+F5` 强制刷新浏览器缓存并重载 `http://127.0.0.1:5000`。
+- **开发者提示**: 前端实现的关键代码在 `templates/index.html`，相关函数：`applyTheme(name)`、`toggleTheme()`。主题状态持久化由 `localStorage.setItem('theme', name)` 控制。
+
+## 前端调试与常见视觉问题
+
+- **按钮不可见或样式错位**：可能是浏览器缓存、旧的静态文件或 CSS 未生效。先尝试强制刷新（`Ctrl+F5`），或打开 DevTools 检查是否存在 `#themeToggle` 元素与样式冲突（z-index、position）。
+- **主题切换未生效**：确认页面上有 `data-theme="dark"`（暗色）或没有该属性（浅色）；也可在控制台执行 `localStorage.getItem('theme')` 查看当前值。
+- **情感指示器未显示**：如 API 返回的 `emotion` 字段为空，参考文档上方“运行与调试（情感分析专用提示）”小节，检查是否运行了最新的 Flask 实例。
+
+如果你希望，我可以把这些说明提炼成一段快速 GIF 或截图，并把 README 中的相关片段连同图片一起提交。欢迎告诉我你想要的更多文档风格（例如更短的快速开始或更详细的部署指南）。
