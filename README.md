@@ -127,6 +127,93 @@ pytest -q
 - `.env` 未加载：确认 `python-dotenv` 已安装并且 `.env` 文件位于项目根；`config.py` 使用 `load_dotenv(path)` 明确加载。
 - 端口被占用或进程异常退出：检查端口（`netstat -ano | findstr :5000`）并查看 `app.py` 的启动日志。
 
+### Git 网络问题与解决（常见命令）
+
+下面列出一些在推送/拉取时常见的网络问题与调试/修复命令，复制到终端执行即可。请根据你所在网络环境（是否使用代理、防火墙等）选择适用的方案。
+
+- 查看与远程连接的详细调试信息：
+
+```bash
+# 显示 Git 与 curl 的调试输出（有助于诊断 TLS/代理/认证问题）
+GIT_TRACE=1 GIT_CURL_VERBOSE=1 git push origin main
+```
+
+- 使用代理时配置 Git：
+
+```bash
+# 设置 HTTP/HTTPS 代理（示例：本地代理 127.0.0.1:7890）
+git config --global http.proxy http://127.0.0.1:7890
+git config --global https.proxy http://127.0.0.1:7890
+
+# 取消代理
+git config --global --unset http.proxy
+git config --global --unset https.proxy
+```
+
+- 临时通过环境变量设置代理（只在当前 shell 有效）：
+
+```bash
+export HTTP_PROXY="http://user:pass@127.0.0.1:7890"
+export HTTPS_PROXY="http://user:pass@127.0.0.1:7890"
+```
+
+- 若系统或浏览器已设置代理并影响 Git（Windows 上常见），可尝试禁用这些代理或在 Git 中取消代理设置：
+
+```bash
+git config --system --unset http.proxy || true
+git config --global --unset http.proxy || true
+```
+
+- 切换到 SSH 推送（避免 HTTPS/代理相关问题）：
+
+```bash
+# 1) 生成 SSH 密钥（若尚未有）
+ssh-keygen -t ed25519 -C "your-email@example.com"
+# 2) 启动 ssh-agent 并添加密钥
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+# 3) 将 ~/.ssh/id_ed25519.pub 内容添加到 GitHub -> Settings -> SSH and GPG keys
+# 4) 切换远程为 SSH URL 并推送
+git remote set-url origin git@github.com:你的用户名/仓库名.git
+git push -u origin main
+```
+
+- 如果遇到凭证/认证提示（HTTP Basic / Personal Access Token）：
+
+```bash
+# 使用 GitHub 的 Personal Access Token (PAT) 作为密码，或使用 Git Credential Manager
+GIT_ASKPASS=echo git push https://<username>:<token>@github.com/<username>/<repo>.git
+```
+
+- 测试 TLS/证书或与远程主机的连通性：
+
+```bash
+# 使用 curl 简单测试
+curl -v https://github.com
+
+# 使用 openssl 检查证书链
+openssl s_client -connect github.com:443 -servername github.com
+```
+
+- （仅用于排查）临时跳过证书校验——强烈不推荐长期使用，仅用于排查内网证书问题：
+
+```bash
+# 非推荐：请谨慎使用
+GIT_SSL_NO_VERIFY=true git push origin main
+```
+
+- 如果遇到 `.netrc` 或凭证缓存问题：
+
+```bash
+# 查看当前 Git 配置中的凭证管理器设置
+git config --list | grep credential
+
+# 清除已缓存的凭证（Windows 下可能使用 Credential Manager）
+printf "protocol=https\nhost=github.com\n" | git credential-reject
+```
+
+如果你把代理、公司网络或 VPN 作为常见因素，请告知我你的网络环境（是否使用公司代理、代理地址、是否能够连接外网等），我可以给出更准确的步骤。若你希望我把 SSH 配置的具体步骤（含公钥上传辅助命令）也写进 README，我可以一并补充。
+
 ## 贡献与许可
 
 欢迎提出 Issue 或 PR 来改进功能、修复 bug 或补充文档。你可以在仓库中直接创建分支并发起 PR。
