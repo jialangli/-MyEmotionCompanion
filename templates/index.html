@@ -231,6 +231,60 @@
             font-size: 48px;
             opacity: 0.5;
         }
+
+        /* 情感指示器样式 */
+        .emotion-indicator {
+            padding: 10px 20px;
+            background: #fff3e0;
+            border-bottom: 1px solid #ffe0b2;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .emotion-indicator.active {
+            display: flex;
+        }
+
+        .emotion-icon {
+            font-size: 20px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .emotion-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .emotion-text {
+            flex: 1;
+            color: #555;
+        }
+
+        .emotion-confidence {
+            font-size: 11px;
+            color: #999;
+        }
     </style>
 </head>
 <body>
@@ -242,6 +296,15 @@
 
         <div class="info-bar">
             会话 ID: <span id="sessionId">loading...</span> | 消息数: <span id="msgCount">0</span>
+        </div>
+
+        <div class="emotion-indicator" id="emotionIndicator">
+            <div class="emotion-icon" id="emotionIcon">😊</div>
+            <div class="emotion-text">
+                你现在感到 <span id="emotionLabel">中性</span>
+                <span class="emotion-badge" id="emotionBadge">正面</span>
+            </div>
+            <div class="emotion-confidence" id="emotionConfidence">置信度 90%</div>
         </div>
 
         <div class="chat-box" id="chatBox">
@@ -278,10 +341,34 @@
         const sendBtn = document.getElementById('sendBtn');
         const sessionIdSpan = document.getElementById('sessionId');
         const msgCountSpan = document.getElementById('msgCount');
+        const emotionIndicator = document.getElementById('emotionIndicator');
+        const emotionIcon = document.getElementById('emotionIcon');
+        const emotionLabel = document.getElementById('emotionLabel');
+        const emotionBadge = document.getElementById('emotionBadge');
+        const emotionConfidence = document.getElementById('emotionConfidence');
 
         // 状态
         let messageCount = 0;
         let isLoading = false;
+        let lastEmotion = null;
+        
+        // 情感图标映射
+        const emotionIconMap = {
+            '难过': '😢',
+            '开心': '😊',
+            '生气': '😠',
+            '疲惫': '😴',
+            '焦虑': '😰',
+            '兴奋': '🤩',
+            '害怕': '😨',
+            '厌恶': '🤮',
+            '恐惧': '😱',
+            '惊讶': '😲',
+            '中性': '😐'
+        };
+        
+        // 情感极性文本
+        const polarityTextMap = ['失望', '平常', '开心'];
 
         // 初始化
         function init() {
@@ -351,6 +438,34 @@
             }
         }
 
+        // 显示情感分析结果
+        function displayEmotion(emotionData) {
+            if (!emotionData || !emotionData.emotion) {
+                emotionIndicator.classList.remove('active');
+                return;
+            }
+
+            lastEmotion = emotionData;
+            
+            // 更新情感图标
+            const icon = emotionIconMap[emotionData.emotion] || emotionIconMap['中性'];
+            emotionIcon.textContent = icon;
+            
+            // 更新情感标签
+            emotionLabel.textContent = emotionData.emotion;
+            
+            // 更新极性 badge
+            const polarityText = polarityTextMap[emotionData.polarity] || '平常';
+            emotionBadge.textContent = polarityText;
+            
+            // 更新置信度
+            const confidence = (emotionData.confidence * 100).toFixed(0);
+            emotionConfidence.textContent = `置信度 ${confidence}%`;
+            
+            // 显示情感指示器
+            emotionIndicator.classList.add('active');
+        }
+
         // 发送消息
         async function sendMessage() {
             const message = messageInput.value.trim();
@@ -391,6 +506,12 @@
                 if (data.status === 'success') {
                     removeLoading();
                     addMessageToChat(data.reply, false);
+                    
+                    // 显示情感分析结果（如果有）
+                    if (data.emotion) {
+                        displayEmotion(data.emotion);
+                    }
+                    
                     messageCount++;
                     updateMessageCount();
                 } else {
