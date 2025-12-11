@@ -62,6 +62,7 @@
         .header {
             background: var(--header-gradient);
             color: white;
+            position: relative;
             padding: 20px;
             border-radius: 20px 20px 0 0;
             text-align: center;
@@ -288,17 +289,29 @@
         /* 主题切换按钮 */
         .theme-toggle {
             position: absolute;
-            right: 18px;
-            top: 18px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.12);
+            right: 12px;
+            top: 12px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
             color: white;
-            padding: 6px 10px;
-            border-radius: 12px;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            transition: transform 0.15s ease, background 0.15s ease;
         }
         .theme-toggle:focus { outline: none; }
+        .theme-toggle:hover { transform: translateY(-2px); }
+
+        .theme-icon { font-size: 18px; line-height: 1; }
+
+        .visually-hidden { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
 
         .emotion-icon {
             font-size: 20px;
@@ -392,7 +405,10 @@
         <div class="header">
             <h1>💕 情感陪伴伙伴</h1>
             <p>你的专属女朋友，随时陪伴你</p>
-            <button id="themeToggle" class="theme-toggle" aria-label="切换主题">🌙 夜间</button>
+            <button id="themeToggle" class="theme-toggle" aria-label="切换主题" title="切换主题">
+                <span id="themeIcon" class="theme-icon">🌙</span>
+                <span class="visually-hidden">切换主题</span>
+            </button>
         </div>
 
         <div class="info-bar">
@@ -485,14 +501,16 @@
         }
 
         function applyTheme(name) {
+            const iconEl = document.getElementById('themeIcon');
+            const btn = document.getElementById('themeToggle');
             if (name === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
-                const btn = document.getElementById('themeToggle');
-                if (btn) btn.textContent = '☀️ 日间';
+                if (iconEl) iconEl.textContent = '☀️';
+                if (btn) btn.title = '切换到日间主题';
             } else {
                 document.documentElement.removeAttribute('data-theme');
-                const btn = document.getElementById('themeToggle');
-                if (btn) btn.textContent = '🌙 夜间';
+                if (iconEl) iconEl.textContent = '🌙';
+                if (btn) btn.title = '切换到夜间主题';
             }
             localStorage.setItem('theme', name);
         }
