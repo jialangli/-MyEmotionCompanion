@@ -101,16 +101,32 @@ SECRET_KEY=replace-with-random-secret
 
 如果需要，我可以帮助你生成用于从 Git 历史中删除已提交密钥的命令示例（按照你的偏好使用 `git-filter-repo` 或 `bfg-repo-cleaner`），以及一份密钥轮换与通知的操作清单。
 
-## 本地运行
+## 本地运行（推荐）
 
-激活虚拟环境后运行：
+推荐使用仓库内的启动/停止脚本来管理本地服务，这样便于后台运行并保留 PID 文件供后续停止或重启使用。脚本位于 `scripts/`：
+
+- `scripts/start_app.sh`：使用 `nohup` 后台启动 `app.py`，日志写入 `flask_output.log`，并把进程 ID 写入根目录的 `app.pid` 和 `gunicorn.pid`。
+- `scripts/stop_app.sh`：根据 `app.pid` / `gunicorn.pid` 停止对应进程并删除 PID 文件。
+
+在 Git Bash / WSL /类 Unix shell 中运行：
 
 ```bash
-source venv/Scripts/activate
-python app.py
+cd /d/Desktop/AIFriend/MyEmotionCompanion
+# 启动（后台运行，日志写入 flask_output.log）
+bash ./scripts/start_app.sh
+
+# 停止
+bash ./scripts/stop_app.sh
 ```
 
-然后在浏览器打开 `http://127.0.0.1:5000`。
+脚本会尝试激活 `venv`（支持 `venv/Scripts/activate` 与 `venv/bin/activate`）。如果未创建虚拟环境，请先：
+
+```bash
+/c/Python312/python -m venv venv
+venv/Scripts/pip install -r requirements.txt
+```
+
+注意：在原生 PowerShell/CMD 环境下 `bash` 脚本可能不可用；如需要我可以提供等价的 `start_app.ps1` / `stop_app.ps1`。
 
 ## API 接口说明
 
