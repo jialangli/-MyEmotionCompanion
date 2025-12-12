@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主动关怀功能测试</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        #messages {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .message {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background: white;
+            border-left: 4px solid #667eea;
+        }
+        .message.care {
+            border-left-color: #ff69b4;
+            background: #fff5f8;
+        }
+        .message-time {
+            font-size: 12px;
+            color: #999;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        .info {
+            background: #d1ecf1;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌟 主动关怀功能测试页面</h1>
+    
+    <div class="panel">
+        <h2>1. WebSocket 连接状态</h2>
+        <div id="status" class="status disconnected">未连接</div>
+        <button onclick="connectWebSocket()">连接</button>
+        <button onclick="disconnectWebSocket()">断开</button>
+    </div>
+
+    <div class="panel">
+        <h2>2. 用户设置</h2>
+        <div class="info">
+            <strong>当前用户ID:</strong> <span id="userId"></span>
+        </div>
+        <div>
+            <label>关怀推送时间: <input type="time" id="careTime" value="19:39"></label>
+            <button onclick="setUserSchedule()">保存设置</button>
+        </div>
+        <div id="scheduleResult"></div>
+    </div>
+
+    <div class="panel">
+        <h2>3. 接收到的消息</h2>
+        <div id="messages"></div>
+    </div>
+
+    <div class="panel">
+        <h2>4. 系统信息</h2>
+        <button onclick="checkSystemStatus()">查看系统状态</button>
+        <pre id="systemInfo"></pre>
+    </div>
+
+    <script>
+        let socket = null;
+        const userId = `test_user_${Date.now()}`;
+        document.getElementById('userId').textContent = userId;
+
+        function addMessage(content, type = 'normal') {
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.innerHTML = `
+                <div>${content}</div>
+                <div class="message-time">${new Date().toLocaleString('zh-CN')}</div>
+            `;
+            document.getElementById('messages').appendChild(div);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            const statusEl = document.getElementById('status');
+            if (connected) {
+                statusEl.textContent = '✅ 已连接到服务器';
+                statusEl.className = 'status connected';
+            } else {
+                statusEl.textContent = '❌ 未连接';
+                statusEl.className = 'status disconnected';
+            }
+        }
+
+        function connectWebSocket() {
+            if (socket) {
+                addMessage('⚠️ 已经连接，请先断开');
+                return;
+            }
+
+            socket = io('http://127.0.0.1:5000');
+
+            socket.on('connect', () => {
+                updateStatus(true);
+                addMessage('🔌 WebSocket 已连接');
+                socket.emit('register', { user_id: userId });
+            });
+
+            socket.on('registered', (data) => {
+                addMessage(`✅ 用户注册成功: ${data.user_id}`);
+            });
+
+            socket.on('disconnect', () => {
+                updateStatus(false);
+                addMessage('🔌 WebSocket 已断开');
+            });
+
+            socket.on('care_message', (data) => {
+                addMessage(`💕 主动关怀消息: ${data.content}<br>类型: ${data.message_type}`, 'care');
+                // 播放提示音（可选）
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification('收到关怀消息', {
+                        body: data.content,
+                        icon: '💕'
+                    });
+                }
+            });
+
+            socket.on('error', (error) => {
+                addMessage(`❌ 错误: ${JSON.stringify(error)}`);
+            });
+        }
+
+        function disconnectWebSocket() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                updateStatus(false);
+                addMessage('🔌 已主动断开连接');
+            }
+        }
+
+        async function setUserSchedule() {
+            const careTime = document.getElementById('careTime').value;
+            if (!careTime) {
+                alert('请输入关怀时间');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/user/schedule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        timezone: 'Asia/Shanghai',
+                        enable_morning: 0,
+                        enable_evening: 0,
+                        enable_care: 1,
+                        care_time: careTime
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById('scheduleResult').innerHTML = `
+                    <div class="info" style="background: #d4edda; color: #155724;">
+                        ✅ 设置成功！将在 ${careTime} 收到关怀消息<br>
+                        <small>${JSON.stringify(data, null, 2)}</small>
+                    </div>
+                `;
+                addMessage(`⚙️ 推送时间已设置为: ${careTime}`);
+            } catch (error) {
+                document.getElementById('scheduleResult').innerHTML = `
+                    <div class="info" style="background: #f8d7da; color: #721c24;">
+                        ❌ 设置失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function checkSystemStatus() {
+            try {
+                const [wsStatus, schedulerStatus] = await Promise.all([
+                    fetch('http://127.0.0.1:5000/api/websocket/status').then(r => r.json()),
+                    fetch('http://127.0.0.1:5000/api/scheduler/status').then(r => r.json())
+                ]);
+
+                document.getElementById('systemInfo').textContent = JSON.stringify({
+                    websocket: wsStatus,
+                    scheduler: schedulerStatus
+                }, null, 2);
+            } catch (error) {
+                document.getElementById('systemInfo').textContent = `错误: ${error.message}`;
+            }
+        }
+
+        // 请求通知权限
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // 页面加载时自动连接
+        window.addEventListener('load', () => {
+            addMessage('📋 测试页面已加载，请点击"连接"按钮');
+        });
+    </script>
+</body>
+</html>

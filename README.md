@@ -1,355 +1,351 @@
-# MyEmotionCompanion
+# MyEmotionCompanion 💕
 
-一个本地运行的情感陪伴 Flask 应用，集成了 AI 服务（通过 DeepSeek API）。
+一个具备**主动关怀**功能的智能情感陪伴应用，集成 AI 对话、情感分析、定时推送和实时通信。
 
-**重要：不要将 `.env` 或包含密钥的配置文件提交到远程仓库。**
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.1.2-green.svg)](https://flask.palletsprojects.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## 快速开始
+**安全提醒：请务必将 API Key 等敏感信息保存在 `.env`，且不要把 `.env`、数据库文件或包含凭据的配置提交到 Git。**
 
-先在项目根目录创建并激活虚拟环境，然后安装依赖：
+---
+
+## ✨ 核心功能
+
+### 🤖 智能对话
+- 基于 **DeepSeek API** 的自然语言对话
+- 支持自定义人格（温暖伴侣/知识百科）
+- 对话历史持久化，重启后保持上下文
+
+### 💖 主动关怀系统（新功能！）
+- ⏰ **定时推送**：早安、晚安、下班关怀三种类型
+- 🎯 **个性化消息**：AI 根据时间和情境生成温暖内容
+- 📱 **实时推送**：WebSocket 双向通信，消息即时送达
+- ⚙️ **灵活配置**：用户可自定义推送时间和启用/禁用
+
+### 😊 情感分析
+- 集成百度 AI 情感分析 API
+- 实时识别用户情绪状态
+- 根据情感调整回复风格
+
+### 🎨 现代化界面
+- 响应式设计，支持日间/夜间主题
+- 打字机效果展示 AI 回复
+- 特殊样式标识主动推送消息
+- 实时连接状态显示
+
+---
+
+## 📁 项目结构
+
+```
+MyEmotionCompanion/
+├── app.py                      # Flask 主应用（集成所有模块）
+├── config.py                   # 环境配置
+├── models.py                   # 用户偏好数据库模型
+├── scheduler.py                # APScheduler 定时任务调度
+├── websocket_handler.py        # WebSocket 实时推送服务
+├── requirements.txt            # Python 依赖
+├── TEST_GUIDE.md              # 完整测试指南
+├── services/
+│   ├── ai_service.py          # DeepSeek AI 对话服务
+│   └── emotion_analyzer.py    # 百度情感分析服务
+├── templates/
+│   ├── index.html             # 主聊天界面（含 WebSocket 客户端）
+│   └── test.html              # 主动关怀功能测试页面
+├── scripts/
+│   ├── start_app.sh           # Linux/Mac 启动脚本
+│   ├── stop_app.sh            # Linux/Mac 停止脚本
+│   ├── start_app.ps1          # Windows PowerShell 启动脚本
+│   └── stop_app.ps1           # Windows PowerShell 停止脚本
+└── databases/
+    ├── chat_history.db        # 对话历史数据库
+    └── companion.db           # 用户偏好数据库
+```
+
+---
+
+## 🚀 快速开始
+
+### 1. 环境准备
 
 ```bash
+# 克隆仓库
+git clone https://github.com/jialangli/-MyEmotionCompanion.git
+cd MyEmotionCompanion
 
-# MyEmotionCompanion
-
-MyEmotionCompanion 是一个本地运行的情感陪伴 Flask 应用，集成了第三方 LLM 服务（DeepSeek API）用于生成带有人格化风格的对话回复，并使用 SQLite 保存对话历史以实现重启持久化。适合作为个人情感陪伴、原型验证或二次开发的起点。
-
-**安全提醒：请务必将 API Key 等敏感信息保存在 `.env`，且不要把 `.env`、数据库文件或包含凭据的配置提交到 Git。仓库已包含 `.gitignore`。**
-
-## 功能特性
-
-- 基于 Flask 提供 HTTP API 与网页前端（`templates/index.html`）。
-- 将会话历史持久化到 SQLite 数据库（`chat_history.db`），重启后能恢复上下文。
-- 可通过 `services/ai_service.py` 自定义 system prompt 来调节 AI 的人格（例如“暖心伴侣/女友”）。
-- 前端使用简单的 JavaScript（Fetch API）与后端交互，包含重试与错误提示机制。
-- 包含基础的单元测试模板及 GitHub Actions CI 工作流。
-
-## 目录结构（重要文件）
-
-- `app.py` — Flask 主程序，包含路由与数据库助手函数。
-- `config.py` — 环境配置（从 `.env` 加载 API Key 等）。
-- `services/ai_service.py` — 封装与 DeepSeek API 的交互与 system prompt。
-- `templates/index.html` — 聊天前端界面。
-- `chat_history.db` — SQLite 数据库（不应纳入版本控制）。
-- `.github/workflows/ci.yml` — 简单的 CI 工作流（运行 pytest）。
-
-## 安装与配置
-
-先在项目根创建并激活虚拟环境，然后安装依赖：
-
-```bash
+# 创建虚拟环境
 python -m venv venv
-source venv/bin/activate  # Windows: venv\\Scripts\\activate
+
+# 激活虚拟环境
+source venv/bin/activate          # Linux/Mac
+# 或
+venv\Scripts\activate              # Windows
+```
+
+### 2. 安装依赖
+
+```bash
 pip install -r requirements.txt
 ```
 
-创建 `.env` 并写入你的 API Key（示例）：
+### 3. 配置环境变量
 
-```text
-DEEPSEEK_API_KEY=sk-xxxxxx
-SECRET_KEY=replace-with-random-secret
+在项目根目录创建 `.env` 文件：
+
+```env
+# DeepSeek API Key（必需）
+DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxx
+
+# Flask Secret Key（必需）
+SECRET_KEY=your-random-secret-key-here
+
+# 百度情感分析 API（可选）
+BAIDU_API_KEY=your-baidu-api-key
+BAIDU_SECRET_KEY=your-baidu-secret-key
 ```
 
-（注意：如果你使用不同的变量名或配置文件，请相应修改 `config.py`。）
+### 4. 启动应用
 
-## 安全与密钥管理（不要把 Key 写进代码）
-
-强烈建议不要把 `API Key`、`Secret Key` 等敏感信息直接写入源码或提交到远程仓库。推荐做法：
-
-- 在项目根使用 `.env` 文件保存敏感变量，并把 `.env` 写入 `.gitignore`（仓库已包含此项）。
-- 在 `config.py` 中使用 `python-dotenv` 或直接读取环境变量，示例：
-
-```python
-from dotenv import load_dotenv
-import os
-
-# 在模块加载时显式加载项目根目录下的 .env
-load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
-
-DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
-BAIDU_API_KEY = os.getenv('BAIDU_API_KEY')
-BAIDU_SECRET_KEY = os.getenv('BAIDU_SECRET_KEY')
-```
-
-- 如果不慎将密钥提交到 Git 仓库，请尽快：
-	1. 从远程历史中移除敏感文件（示例命令，会修改历史，谨慎操作）：
-
+**方式一：直接运行**
 ```bash
-# 从最新提交中删除 .env 并提交（保留本地文件）
-git rm --cached .env
-git commit -m "remove .env from repo"
-git push origin main
-
-# 若密钥已出现在历史提交中，使用 recommended 工具 清理历史（示例）
-# 推荐使用: https://github.com/newren/git-filter-repo 或 BFG
-# 例如（使用 git-filter-repo）：
-# git filter-repo --path .env --invert-paths
+python app.py
 ```
 
-	2. 立即在相应服务/平台（DeepSeek、Baidu 等）上撤销并重新生成新的密钥（密钥轮换）。不要继续使用已泄露的密钥。
+**方式二：使用启动脚本（推荐）**
 
-- 为方便协作，推荐提交一个 `.env.example`（不包含真实密钥），示例：
-
-```text
-DEEPSEEK_API_KEY=sk-REPLACE_WITH_YOURS
-BAIDU_API_KEY=REPLACE_WITH_YOURS
-BAIDU_SECRET_KEY=REPLACE_WITH_YOURS
-SECRET_KEY=replace-with-random-secret
-```
-
-如果需要，我可以帮助你生成用于从 Git 历史中删除已提交密钥的命令示例（按照你的偏好使用 `git-filter-repo` 或 `bfg-repo-cleaner`），以及一份密钥轮换与通知的操作清单。
-
-## 本地运行（推荐）
-
-推荐使用仓库内的启动/停止脚本来管理本地服务，这样便于后台运行并保留 PID 文件供后续停止或重启使用。脚本位于 `scripts/`：
-
-- `scripts/start_app.sh`：使用 `nohup` 后台启动 `app.py`，日志写入 `flask_output.log`，并把进程 ID 写入根目录的 `app.pid` 和 `gunicorn.pid`。
-- `scripts/stop_app.sh`：根据 `app.pid` / `gunicorn.pid` 停止对应进程并删除 PID 文件。
-
-在 Git Bash / WSL /类 Unix shell 中运行：
-
+Linux/Mac:
 ```bash
-cd /d/Desktop/AIFriend/MyEmotionCompanion
-# 启动（后台运行，日志写入 flask_output.log）
 bash ./scripts/start_app.sh
+```
 
-# 停止
+Windows PowerShell:
+```powershell
+./scripts/start_app.ps1
+```
+
+### 5. 访问应用
+
+- **主页面**: http://127.0.0.1:5000
+- **健康检查**: http://127.0.0.1:5000/health
+- **测试页面**: http://127.0.0.1:5000/test
+
+---
+
+## 📊 主动关怀系统使用
+
+### 设置用户推送偏好
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/user/schedule \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "your_user_id",
+    "enable_morning": 1,
+    "morning_time": "08:30",
+    "enable_evening": 1,
+    "evening_time": "22:00",
+    "enable_care": 1,
+    "care_time": "18:00"
+  }'
+```
+
+### 查询用户推送偏好
+
+```bash
+curl "http://127.0.0.1:5000/api/user/schedule?user_id=your_user_id"
+```
+
+### 查看系统状态
+
+```bash
+# WebSocket 连接状态
+curl http://127.0.0.1:5000/api/websocket/status
+
+# 调度器任务状态
+curl http://127.0.0.1:5000/api/scheduler/status
+```
+
+---
+
+## 🧪 测试
+
+### 快速测试
+
+1. 打开测试页面: http://127.0.0.1:5000/test
+2. 点击"连接"按钮建立 WebSocket 连接
+3. 设置关怀时间（建议设置为当前时间 + 2分钟）
+4. 点击"保存设置"
+5. 等待到达设定时间，观察主动推送的关怀消息
+
+### 详细测试指南
+
+参见 [TEST_GUIDE.md](TEST_GUIDE.md) 了解完整的测试流程和 API 文档。
+
+---
+
+## 🔧 技术栈
+
+- **后端框架**: Flask 3.1.2
+- **AI 服务**: DeepSeek API
+- **情感分析**: 百度 AI
+- **数据库**: SQLite
+- **任务调度**: APScheduler 3.10.4
+- **实时通信**: Flask-SocketIO 5.3.6
+- **前端**: HTML5 + CSS3 + Vanilla JavaScript
+
+---
+
+## 📝 API 文档
+
+### 聊天接口
+
+**POST** `/api/chat`
+
+请求体:
+```json
+{
+  "message": "用户消息",
+  "session_id": "会话ID"
+}
+```
+
+响应:
+```json
+{
+  "status": "success",
+  "reply": "AI回复内容",
+  "emotion": {
+    "emotion": "开心",
+    "polarity": 2,
+    "confidence": 0.95
+  }
+}
+```
+
+### 用户推送偏好
+
+**GET/POST** `/api/user/schedule`
+
+**POST** `/api/user/schedule/disable`
+
+详见 [TEST_GUIDE.md](TEST_GUIDE.md)
+
+---
+
+## 🛠️ 开发
+
+### 目录说明
+
+- `app.py`: Flask 主应用，路由定义
+- `models.py`: 数据库模型（用户偏好）
+- `scheduler.py`: 定时任务调度逻辑
+- `websocket_handler.py`: WebSocket 事件处理
+- `services/`: 外部服务封装
+  - `ai_service.py`: AI 对话服务
+  - `emotion_analyzer.py`: 情感分析服务
+
+### 自定义 AI 人格
+
+编辑 `services/ai_service.py` 中的 `system_prompt` 变量来调整 AI 的性格和回复风格。
+
+### 添加新的推送类型
+
+1. 在 `models.py` 中添加新的字段
+2. 在 `scheduler.py` 中添加新的任务类型
+3. 在 `websocket_handler.py` 中处理新的消息类型
+4. 更新前端以显示新类型的消息
+
+---
+
+## 🚫 停止应用
+
+**直接停止**:
+```bash
+# 找到进程ID并终止
+ps aux | grep "python app.py"
+kill <PID>
+```
+
+**使用停止脚本**:
+
+Linux/Mac:
+```bash
 bash ./scripts/stop_app.sh
 ```
 
-脚本会尝试激活 `venv`（支持 `venv/Scripts/activate` 与 `venv/bin/activate`）。如果未创建虚拟环境，请先：
-
-```bash
-/c/Python312/python -m venv venv
-venv/Scripts/pip install -r requirements.txt
+Windows PowerShell:
+```powershell
+./scripts/stop_app.ps1
 ```
 
-注意：在原生 PowerShell/CMD 环境下 `bash` 脚本可能不可用；如需要我可以提供等价的 `start_app.ps1` / `stop_app.ps1`。
+---
 
-## API 接口说明
+## 📌 注意事项
 
-- `GET /health`
-	- 描述：健康检查接口
-	- 返回：`{ "status": "healthy", "ai_integrated": true }`
+### 安全性
+- ⚠️ 不要将 `.env` 文件提交到版本控制
+- ⚠️ 定期更换 API Key 和 Secret Key
+- ⚠️ 生产环境使用 HTTPS 和 WSS
 
-- `POST /api/chat`
-	- 描述：发送用户消息并获取 AI 回复
-	- 请求体（JSON）：
-		```json
-		{
-			"session_id": "user_12345",
-			"message": "你好"
-		}
-		```
-	- 返回（JSON）：
-		```json
-		{
-			"reply": "AI 的回复文本",
-			"session_id": "user_12345"
-		}
-		```
+### 性能优化
+- 建议使用 Gunicorn + Nginx 部署生产环境
+- 配置日志轮转避免日志文件过大
+- 定期清理过期的对话历史
 
-- `POST /api/clear_history`
-	- 描述：清除某个会话的对话历史
-	- 请求体（JSON）： `{ "session_id": "user_12345" }`
-	- 返回：成功/失败状态
+### 代理设置
+- 如果访问外部 API 失败，检查网络代理配置
+- 确保代理工具（如 Clash）正常运行
 
-（注：具体字段以 `app.py` 中的实现为准，必要时可扩展验证与错误码。）
+---
 
-## 部署指南（建议）
+## 🤝 贡献
 
-开发环境使用 Flask 自带服务器即可，但生产请使用 WSGI 服务器（Gunicorn/uvicorn）并在反向代理（Nginx）后面运行：
+欢迎提交 Issue 和 Pull Request！
 
-示例：使用 `gunicorn`（Linux）
+### 贡献指南
 
-```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:8000 app:app
-```
+1. Fork 本仓库
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
 
-如果部署在 Windows Server 或 IIS，请使用合适的 WSGI 容器或考虑容器化（Docker）。
+---
 
-部署时注意：
-- 使用环境变量或密钥管理服务保存 API Key（例如：GitHub Secrets、Azure Key Vault、AWS Secrets Manager）。
-- 不要把 `.env` 上传到远程仓库；若误提交，请参考 `git filter-repo` 或 `bfg-repo-cleaner` 清理历史。
+## 📄 许可证
 
-## CI / 测试
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
-仓库包含一个基础 GitHub Actions workflow（`.github/workflows/ci.yml`），在 `main` 分支的 push 或 PR 时运行 `pytest`（如果检测到测试文件）。本地运行测试：
+---
 
-```bash
-source venv/Scripts/activate
-pytest -q
-```
+## 🙏 致谢
 
-## 常见问题与排查
+- [DeepSeek](https://www.deepseek.com/) - 提供强大的 AI 对话能力
+- [百度 AI](https://ai.baidu.com/) - 提供情感分析服务
+- [Flask](https://flask.palletsprojects.com/) - 优秀的 Python Web 框架
+- [APScheduler](https://apscheduler.readthedocs.io/) - 强大的 Python 任务调度库
 
-- 页面提示 `Failed to fetch`：确认 Flask 服务是否运行（`http://127.0.0.1:5000/health`），并检查浏览器是否使用了代理或 CORS 设置。
-- `.env` 未加载：确认 `python-dotenv` 已安装并且 `.env` 文件位于项目根；`config.py` 使用 `load_dotenv(path)` 明确加载。
-- 端口被占用或进程异常退出：检查端口（`netstat -ano | findstr :5000`）并查看 `app.py` 的启动日志。
+---
 
-## 运行与调试（情感分析专用提示）
+## 📮 联系方式
 
-如果你发现前端或 API 返回中缺少 `emotion` 字段，按下面步骤排查：
+- **作者**: jialangli
+- **仓库**: https://github.com/jialangli/-MyEmotionCompanion
 
-- 确认服务实例：可能存在旧的多个 Flask 进程并行运行，导致请求由未加载最新代码的旧实例处理。查看并结束旧进程：
+---
 
-```bash
-# 列出占用 5000 端口的进程（Windows）
-netstat -ano | findstr :5000
-# 使用任务管理器或 taskkill 结束指定 PID：
-taskkill /PID <PID> /F
-```
+## 🔮 未来规划
 
-- 检查 `flask_output.log`（或你启动时指定的日志文件）以查看 `情感分析` 或 `Debug` 打印是否存在：
+- [ ] 支持多用户系统
+- [ ] 添加语音对话功能
+- [ ] 集成更多 AI 模型选择
+- [ ] 移动端 App 开发
+- [ ] 添加记忆系统（长期记忆）
+- [ ] 支持图片、表情包发送
+- [ ] 添加用户画像分析
+- [ ] 集成天气、新闻等外部数据
 
-```bash
-tail -n 200 flask_output.log
-```
+---
 
-- 直接在 Python REPL 中测试情感分析器是否可用（在虚拟环境下运行）：
-
-```bash
-source venv/Scripts/activate
-python - <<'PY'
-from services.emotion_analyzer import BaiduEmotionAnalyzer
-import config
-an = BaiduEmotionAnalyzer(config.BAIDU_API_KEY, config.BAIDU_SECRET_KEY)
-print(an.analyze_emotion('我今天很难过'))
-PY
-```
-
-- 如果情感分析器返回 `None` 或回退到中性，这是网络/密钥或百度 API 可用性导致的正常回退行为；应用会仍然返回 AI 回复，但 `emotion` 可能为空或为回退值。
-
-- 为避免未来出现多进程冲突，推荐使用进程管理器或 PID 文件（见“生产建议”小节）。
-
-## 生产建议（进程管理与自动重启）
-
-开发时直接运行 `python app.py` 足够，但在线上建议使用 WSGI 进程管理：
-
-- 使用 `gunicorn`（Linux）：
-
-```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:8000 app:app
-```
-
-- Windows 平台可用 `waitress-serve` 或将应用容器化（Docker）。示例 `waitress`：
-
-```bash
-pip install waitress
-waitress-serve --listen=0.0.0.0:5000 app:app
-```
-
-- 使用 `systemd` 或 `supervisord` 管理 Gunicorn，可确保单实例、自动重启以及日志收集。
-
-（如需，我可以为你生成 `systemd` unit 文件或 `supervisord` 配置样例。）
-
-
-### Git 网络问题与解决（常见命令）
-
-下面列出一些在推送/拉取时常见的网络问题与调试/修复命令，复制到终端执行即可。请根据你所在网络环境（是否使用代理、防火墙等）选择适用的方案。
-
-- 查看与远程连接的详细调试信息：
-
-```bash
-# 显示 Git 与 curl 的调试输出（有助于诊断 TLS/代理/认证问题）
-GIT_TRACE=1 GIT_CURL_VERBOSE=1 git push origin main
-```
-
-- 使用代理时配置 Git：
-
-```bash
-# 设置 HTTP/HTTPS 代理（示例：本地代理 127.0.0.1:7890）
-git config --global http.proxy http://127.0.0.1:7890
-git config --global https.proxy http://127.0.0.1:7890
-
-# 取消代理
-git config --global --unset http.proxy
-git config --global --unset https.proxy
-```
-
-- 临时通过环境变量设置代理（只在当前 shell 有效）：
-
-```bash
-export HTTP_PROXY="http://user:pass@127.0.0.1:7890"
-export HTTPS_PROXY="http://user:pass@127.0.0.1:7890"
-```
-
-- 若系统或浏览器已设置代理并影响 Git（Windows 上常见），可尝试禁用这些代理或在 Git 中取消代理设置：
-
-```bash
-git config --system --unset http.proxy || true
-git config --global --unset http.proxy || true
-```
-
-- 切换到 SSH 推送（避免 HTTPS/代理相关问题）：
-
-```bash
-# 1) 生成 SSH 密钥（若尚未有）
-ssh-keygen -t ed25519 -C "your-email@example.com"
-# 2) 启动 ssh-agent 并添加密钥
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_ed25519
-# 3) 将 ~/.ssh/id_ed25519.pub 内容添加到 GitHub -> Settings -> SSH and GPG keys
-# 4) 切换远程为 SSH URL 并推送
-git remote set-url origin git@github.com:你的用户名/仓库名.git
-git push -u origin main
-```
-
-- 如果遇到凭证/认证提示（HTTP Basic / Personal Access Token）：
-
-```bash
-# 使用 GitHub 的 Personal Access Token (PAT) 作为密码，或使用 Git Credential Manager
-GIT_ASKPASS=echo git push https://<username>:<token>@github.com/<username>/<repo>.git
-```
-
-- 测试 TLS/证书或与远程主机的连通性：
-
-```bash
-# 使用 curl 简单测试
-curl -v https://github.com
-
-# 使用 openssl 检查证书链
-openssl s_client -connect github.com:443 -servername github.com
-```
-
-- （仅用于排查）临时跳过证书校验——强烈不推荐长期使用，仅用于排查内网证书问题：
-
-```bash
-# 非推荐：请谨慎使用
-GIT_SSL_NO_VERIFY=true git push origin main
-```
-
-- 如果遇到 `.netrc` 或凭证缓存问题：
-
-```bash
-# 查看当前 Git 配置中的凭证管理器设置
-git config --list | grep credential
-
-# 清除已缓存的凭证（Windows 下可能使用 Credential Manager）
-printf "protocol=https\nhost=github.com\n" | git credential-reject
-```
-
-如果你把代理、公司网络或 VPN 作为常见因素，请告知我你的网络环境（是否使用公司代理、代理地址、是否能够连接外网等），我可以给出更准确的步骤。若你希望我把 SSH 配置的具体步骤（含公钥上传辅助命令）也写进 README，我可以一并补充。
-
-## 贡献与许可
-
-欢迎提出 Issue 或 PR 来改进功能、修复 bug 或补充文档。你可以在仓库中直接创建分支并发起 PR。
-
-如果你希望我为仓库添加更多示例（例如 Dockerfile、更多测试或自动部署工作流），告诉我你的目标平台，我可以继续实现。
-
-## 前端更新（主题切换）
-
-- **位置**: 主题切换按钮位于网页右上角的标题栏内（在 `templates/index.html` 的 header 区域）。元素 ID 为 `themeToggle`，图标元素 ID 为 `themeIcon`，文本部分类名为 `.theme-text`。
-- **外观**: 当前为长方形胶囊型按钮（图标 + 文本），能在“日间/夜间”两种主题之间切换，并将选择保存在浏览器的 `localStorage`（键名 `theme`）。
-- **使用**: 点击按钮即可切换主题；刷新页面后会保留上次选择。如果看不到更新的按钮，按 `Ctrl+F5` 强制刷新浏览器缓存并重载 `http://127.0.0.1:5000`。
-- **开发者提示**: 前端实现的关键代码在 `templates/index.html`，相关函数：`applyTheme(name)`、`toggleTheme()`。主题状态持久化由 `localStorage.setItem('theme', name)` 控制。
-
-## 前端调试与常见视觉问题
-
-- **按钮不可见或样式错位**：可能是浏览器缓存、旧的静态文件或 CSS 未生效。先尝试强制刷新（`Ctrl+F5`），或打开 DevTools 检查是否存在 `#themeToggle` 元素与样式冲突（z-index、position）。
-- **主题切换未生效**：确认页面上有 `data-theme="dark"`（暗色）或没有该属性（浅色）；也可在控制台执行 `localStorage.getItem('theme')` 查看当前值。
-- **情感指示器未显示**：如 API 返回的 `emotion` 字段为空，参考文档上方“运行与调试（情感分析专用提示）”小节，检查是否运行了最新的 Flask 实例。
-
-如果你希望，我可以把这些说明提炼成一段快速 GIF 或截图，并把 README 中的相关片段连同图片一起提交。欢迎告诉我你想要的更多文档风格（例如更短的快速开始或更详细的部署指南）。
+**如果这个项目对你有帮助，请给个 ⭐ Star 支持一下！** 😊

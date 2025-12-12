@@ -1,4 +1,4 @@
-# app.py - Flask主应用文件（集成AI服务版 + 百度情感分析）
+# app.py - Flask主应用文件（集成AI服务版 + 百度情感分析 + WebSocket + 主动关怀）
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import config
@@ -6,6 +6,11 @@ from services.ai_service import get_ai_reply
 from services.emotion_analyzer import BaiduEmotionAnalyzer
 import sqlite3
 import os
+
+# 导入 WebSocket 和调度器模块
+from websocket_handler import init_socketio, get_connection_stats, get_online_users
+from scheduler import init_scheduler, get_scheduler_status, schedule_user_tasks, remove_user_tasks
+from models import init_user_schedule_db, get_user_schedule, create_or_update_user_schedule
 
 # 数据库文件（项目根目录）
 DB_PATH = os.path.join(os.path.dirname(__file__), 'chat_history.db')
@@ -98,10 +103,20 @@ def clear_history_db(session_id):
 
 # 初始化Flask应用
 app = Flask(__name__)
+app.config['SECRET_KEY'] = config.SECRET_KEY if hasattr(config, 'SECRET_KEY') else 'your-secret-key-here'
 CORS(app)
 
 # 初始化数据库
 init_db()
+init_user_schedule_db()
+
+# 初始化 WebSocket
+socketio = init_socketio(app)
+
+# 初始化调度器（在非调试模式下或主进程中）
+import sys
+if '--no-scheduler' not in sys.argv:
+    init_scheduler(app)
 
 # 保留内存字典作为快速缓存（可选）
 conversation_sessions = {}
@@ -113,6 +128,11 @@ def get_session_history_db(session_id):
 @app.route('/')
 def home():
     return render_template('index.html')
+
+@app.route('/test')
+def test_page():
+    """测试主动关怀功能的页面"""
+    return render_template('test.html')
 
 @app.route('/api/test', methods=['GET'])
 def test_api():
@@ -210,12 +230,106 @@ def clear_history():
 def health_check():
     return jsonify({'status': 'healthy', 'ai_integrated': True}), 200
 
+
+@app.route('/api/websocket/status', methods=['GET'])
+def websocket_status():
+    """获取 WebSocket 连接状态"""
+    stats = get_connection_stats()
+    return jsonify({
+        'status': 'success',
+        'websocket': stats
+    })
+
+
+@app.route('/api/scheduler/status', methods=['GET'])
+def scheduler_status():
+    """获取调度器状态"""
+    status = get_scheduler_status()
+    return jsonify({
+        'status': 'success',
+        'scheduler': status
+    })
+
+
+@app.route('/api/user/schedule', methods=['GET', 'POST'])
+def user_schedule():
+    """获取或设置用户的推送偏好"""
+    user_id = request.args.get('user_id') or request.json.get('user_id') if request.method == 'POST' else None
+    
+    if not user_id:
+        return jsonify({'status': 'error', 'message': '缺少 user_id'}), 400
+    
+    if request.method == 'GET':
+        # 获取用户偏好
+        schedule = get_user_schedule(user_id)
+        if schedule:
+            return jsonify({'status': 'success', 'schedule': schedule})
+        else:
+            return jsonify({'status': 'error', 'message': '用户不存在'}), 404
+    
+    elif request.method == 'POST':
+        # 设置用户偏好
+        data = request.json
+        allowed_fields = ['timezone', 'enable_morning', 'morning_time', 
+                         'enable_evening', 'evening_time', 'enable_care', 'care_time']
+        
+        update_data = {k: v for k, v in data.items() if k in allowed_fields}
+        
+        if not update_data:
+            return jsonify({'status': 'error', 'message': '没有有效的更新字段'}), 400
+        
+        # 更新数据库
+        create_or_update_user_schedule(user_id, **update_data)
+        
+        # 重新安排定时任务
+        schedule = get_user_schedule(user_id)
+        if schedule:
+            schedule_user_tasks(user_id, schedule)
+        
+        return jsonify({
+            'status': 'success',
+            'message': '用户偏好已更新',
+            'schedule': schedule
+        })
+
+
+@app.route('/api/user/schedule/disable', methods=['POST'])
+def disable_user_schedule():
+    """禁用用户的推送功能"""
+    data = request.json
+    user_id = data.get('user_id')
+    push_type = data.get('type', 'all')  # all, morning, evening, care
+    
+    if not user_id:
+        return jsonify({'status': 'error', 'message': '缺少 user_id'}), 400
+    
+    # 禁用推送
+    from models import disable_user_push
+    disable_user_push(user_id, push_type)
+    
+    # 移除对应的定时任务
+    if push_type == 'all':
+        remove_user_tasks(user_id)
+    else:
+        from scheduler import scheduler
+        try:
+            scheduler.remove_job(f'{push_type}_{user_id}')
+        except:
+            pass
+    
+    return jsonify({
+        'status': 'success',
+        'message': f'已禁用 {push_type} 推送'
+    })
+
 if __name__ == '__main__':
     print("=" * 60)
-    print("MyEmotionCompanion 情感陪伴程序 (AI集成版)")
+    print("MyEmotionCompanion 情感陪伴程序 (AI集成版 + 主动关怀)")
     print("服务器启动中...")
     print(f"API Key 已配置: {'是' if config.DEEPSEEK_API_KEY else '否（请检查）'}")
     print("访问地址: http://127.0.0.1:5000")
+    print("WebSocket 地址: ws://127.0.0.1:5000")
     print("=" * 60)
     
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    # 使用 socketio.run 而不是 app.run
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False, allow_unsafe_werkzeug=True)

@@ -444,10 +444,14 @@
         </div>
     </div>
 
+    <!-- Socket.IO 客户端库 -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    
     <script>
         // 配置
         const CONFIG = {
             apiUrl: 'http://127.0.0.1:5000/api/chat',
+            wsUrl: 'http://127.0.0.1:5000',
             sessionId: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             maxRetries: 3,
             retryDelay: 1000
@@ -470,6 +474,8 @@
         let isLoading = false;
         let lastEmotion = null;
         let currentTypingMessage = null;
+        let socket = null;
+        let isSocketConnected = false;
         
         // 情感图标映射
         const emotionIconMap = {
@@ -499,6 +505,8 @@
             applyTheme(saved);
             const toggleBtn = document.getElementById('themeToggle');
             if (toggleBtn) toggleBtn.addEventListener('click', toggleTheme);
+            // 初始化 WebSocket 连接
+            initWebSocket();
         }
 
         function applyTheme(name) {
@@ -759,6 +767,135 @@
         function updateMessageCount() {
             msgCountSpan.textContent = messageCount;
         }
+
+        // ========== WebSocket 功能 ==========
+        
+        function initWebSocket() {
+            try {
+                // 创建 Socket.IO 连接
+                socket = io(CONFIG.wsUrl, {
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionAttempts: 5
+                });
+
+                // 连接成功
+                socket.on('connect', () => {
+                    console.log('[WebSocket] 已连接到服务器');
+                    isSocketConnected = true;
+                    
+                    // 注册用户ID
+                    socket.emit('register', { user_id: CONFIG.sessionId });
+                });
+
+                // 注册成功
+                socket.on('registered', (data) => {
+                    console.log('[WebSocket] 用户注册成功:', data);
+                });
+
+                // 连接断开
+                socket.on('disconnect', (reason) => {
+                    console.log('[WebSocket] 连接已断开:', reason);
+                    isSocketConnected = false;
+                });
+
+                // 重连中
+                socket.on('reconnect_attempt', () => {
+                    console.log('[WebSocket] 正在尝试重新连接...');
+                });
+
+                // 重连成功
+                socket.on('reconnect', () => {
+                    console.log('[WebSocket] 重新连接成功');
+                    isSocketConnected = true;
+                    socket.emit('register', { user_id: CONFIG.sessionId });
+                });
+
+                // 接收主动关怀消息
+                socket.on('care_message', (data) => {
+                    console.log('[WebSocket] 收到主动关怀消息:', data);
+                    handleCareMessage(data);
+                });
+
+                // 心跳检测
+                setInterval(() => {
+                    if (isSocketConnected) {
+                        socket.emit('ping');
+                    }
+                }, 30000); // 每30秒发送一次心跳
+
+                // 监听心跳响应
+                socket.on('pong', (data) => {
+                    console.log('[WebSocket] 心跳正常');
+                });
+
+                // 错误处理
+                socket.on('error', (error) => {
+                    console.error('[WebSocket] 连接错误:', error);
+                });
+
+            } catch (error) {
+                console.error('[WebSocket] 初始化失败:', error);
+            }
+        }
+
+        // 处理主动关怀消息
+        async function handleCareMessage(data) {
+            clearEmptyState();
+            
+            const { content, message_type, time } = data;
+            
+            // 创建 AI 消息容器
+            const aiMessageDiv = document.createElement('div');
+            aiMessageDiv.className = 'message ai';
+            aiMessageDiv.style.animation = 'slideIn 0.5s ease-out';
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.style.border = '2px solid #ff69b4';
+            textDiv.style.boxShadow = '0 0 10px rgba(255, 105, 180, 0.3)';
+            textDiv.innerHTML = '<span></span>';
+            
+            aiMessageDiv.appendChild(textDiv);
+            chatBox.appendChild(aiMessageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 执行打字动画
+            await typeMessage(textDiv, content, 40);
+
+            // 添加特殊标记
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'message-status';
+            const typeLabel = {
+                'morning': '早安问候',
+                'evening': '晚安问候',
+                'care': '主动关怀'
+            }[message_type] || '主动消息';
+            
+            statusDiv.innerHTML = `
+                <span class="status-icon">💕</span>
+                <span class="status-label">${typeLabel}</span>
+                <span class="message-timestamp">${new Date(time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
+            `;
+            statusDiv.style.color = '#ff69b4';
+            aiMessageDiv.appendChild(statusDiv);
+
+            // 更新消息计数
+            messageCount++;
+            updateMessageCount();
+            
+            // 滚动到底部
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // 页面卸载时断开连接
+        window.addEventListener('beforeunload', () => {
+            if (socket && isSocketConnected) {
+                socket.emit('unregister', { user_id: CONFIG.sessionId });
+                socket.disconnect();
+            }
+        });
 
         // 启动
         init();
