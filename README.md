@@ -38,10 +38,8 @@ MyEmotionCompanion 是一个本地运行的情感陪伴 Flask 应用，集成了
 先在项目根创建并激活虚拟环境，然后安装依赖：
 
 ```bash
-cd /d/Desktop/AIFriend/MyEmotionCompanion
 python -m venv venv
-# Windows (Git Bash / MINGW)：
-source venv/Scripts/activate
+source venv/bin/activate  # Windows: venv\\Scripts\\activate
 pip install -r requirements.txt
 ```
 
