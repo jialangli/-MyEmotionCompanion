@@ -11,6 +11,7 @@ import os
 from websocket_handler import init_socketio, get_connection_stats, get_online_users
 from scheduler import init_scheduler, get_scheduler_status, schedule_user_tasks, remove_user_tasks
 from models import init_user_schedule_db, get_user_schedule, create_or_update_user_schedule
+from utils.persona_utils import get_persona_prompt, get_all_personas
 
 # 数据库文件（项目根目录）
 DB_PATH = os.path.join(os.path.dirname(__file__), 'chat_history.db')
@@ -144,23 +145,38 @@ def test_api():
     })
 
 
+@app.route('/api/personas', methods=['GET'])
+def get_personas():
+    """获取所有人格列表"""
+    try:
+        personas = get_all_personas()
+        return jsonify({
+            'status': 'success',
+            'personas': personas
+        })
+    except Exception as e:
+        print(f"[API Error] 获取人格列表失败: {e}")
+        return jsonify({'status': 'error', 'message': '获取人格列表失败'}), 500
+
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     """接收用户消息，进行情感分析，并调用AI生成回复"""
     try:
         data = request.json
-        
+
         if not data or 'message' not in data:
             return jsonify({'error': '请提供message参数'}), 400
-        
+
         user_message = data.get('message', '')
         session_id = data.get('session_id', 'default_user')  # 简单的会话标识
-        
+        persona_id = data.get('persona_id', 'warm_partner')  # 获取人格标识，默认为暖心伴侣
+
         # 获取该会话的历史记录（从数据库）
         history = get_session_history_db(session_id)
-        
+
         print(f"[App] 收到消息: '{user_message[:30]}...' (会话: {session_id}, 历史长度: {len(history)})")
-        
+
         # ========== 新增：情感分析 ==========
         emotion_data = None
         if emotion_analyzer:
@@ -171,17 +187,12 @@ def chat():
                 print(f"[情感分析] 失败: {e}")
                 emotion_data = None
 
-        # 调试信息：打印分析器对象及最终 emotion_data 值，便于追查为何未返回到前端
-        try:
-            print(f"[Debug] emotion_analyzer 对象: {emotion_analyzer}")
-            print(f"[Debug] emotion_data 最终值: {emotion_data}")
-        except Exception:
-            pass
-        
-        # 调用AI服务，并传递情感数据作为额外上下文
-        # AI 会根据用户情绪状态调整回复方式
-        ai_reply = get_ai_reply(user_message, history, emotion_data=emotion_data)
-        
+        # 获取人格对应的 system_prompt
+        system_prompt = get_persona_prompt(persona_id)
+
+        # 调用AI服务，并传递情感数据和 system_prompt 作为额外上下文
+        ai_reply = get_ai_reply(user_message, history, emotion_data=emotion_data, system_prompt=system_prompt)
+
         # 持久化到数据库（保存用户消息和AI回复）
         save_message(session_id, 'user', user_message)
         save_message(session_id, 'assistant', ai_reply)
@@ -189,7 +200,7 @@ def chat():
         trim_history(session_id, max_items=10)
         # 重新读取当前历史长度以返回给客户端
         history = get_session_history_db(session_id)
-        
+
         response_payload = {
             'reply': ai_reply,
             'status': 'success',
@@ -203,7 +214,7 @@ def chat():
         except Exception:
             pass
         return jsonify(response_payload)
-        
+
     except Exception as e:
         print(f"[App] 错误: {e}")
         return jsonify({'error': f'服务器内部错误: {str(e)}'}), 500

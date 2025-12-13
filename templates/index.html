@@ -404,7 +404,24 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>💕 情感陪伴伙伴</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h1>💕 情感陪伴伙伴</h1>
+                <!-- 人格选择下拉框 -->
+                <div class="persona-selector" style="position: relative; margin-right: 10px;">
+                    <select id="personaSelect" style="
+                        padding: 5px 10px;
+                        border-radius: 15px;
+                        border: 1px solid rgba(255,255,255,0.5);
+                        background: rgba(255,255,255,0.1);
+                        color: white;
+                        font-size: 12px;
+                        outline: none;
+                        cursor: pointer;
+                    ">
+                        <!-- 选项将通过JS动态加载 -->
+                    </select>
+                </div>
+            </div>
             <p>你的专属女朋友，随时陪伴你</p>
             <button id="themeToggle" class="theme-toggle" title="切换主题">
                 <span id="themeIcon" class="theme-icon">🌙</span>
@@ -495,11 +512,15 @@
         // 情感极性文本
         const polarityTextMap = ['失望', '平常', '开心'];
 
+        // 新增：人格相关全局变量
+        let currentPersonaId = localStorage.getItem('selectedPersona') || 'warm_partner'; // 默认人格
+
         // 初始化
         function init() {
             sessionIdSpan.textContent = CONFIG.sessionId;
             messageInput.focus();
             setupEventListeners();
+            loadPersonas();
             // 主题初始化
             const saved = localStorage.getItem('theme') || 'light';
             applyTheme(saved);
@@ -664,34 +685,87 @@
             emotionIndicator.classList.add('active');
         }
 
-        // 发送消息
+        // 新增：加载人格列表
+        async function loadPersonas() {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/personas', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    const personaSelect = document.getElementById('personaSelect');
+                    personaSelect.innerHTML = '';
+                    data.personas.forEach(persona => {
+                        const option = document.createElement('option');
+                        option.value = persona.id;
+                        option.textContent = `${persona.emoji} ${persona.name}`;
+                        personaSelect.appendChild(option);
+                    });
+                    personaSelect.value = currentPersonaId;
+                    personaSelect.addEventListener('change', (e) => {
+                        currentPersonaId = e.target.value;
+                        localStorage.setItem('selectedPersona', currentPersonaId);
+                        showToast(`已切换为：${e.target.options[e.target.selectedIndex].text}`);
+                    });
+                }
+            } catch (error) {
+                console.error('加载人格列表失败：', error);
+                const personaSelect = document.getElementById('personaSelect');
+                personaSelect.innerHTML = `<option value="warm_partner">💕 暖心伴侣（女友）</option>`;
+            }
+        }
+
+        // 新增：简单的提示框函数
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0,0,0,0.7);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                z-index: 1000;
+                animation: fadeInOut 2s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 2000);
+        }
+
+        // 修改：发送消息时携带人格标识
         async function sendMessage() {
             const message = messageInput.value.trim();
-            
             if (!message || isLoading) return;
-            
+
             isLoading = true;
             sendBtn.disabled = true;
-            
-            // 添加用户消息
+
             addMessageToChat(message, true);
             messageInput.value = '';
             messageCount++;
             updateMessageCount();
-            
-            // 显示加载状态
+
             showLoading();
-            
+
             try {
-                // 调用 API
-                const response = await fetchWithRetry(CONFIG.apiUrl, {
+                const response = await fetch(CONFIG.apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         message: message,
-                        session_id: CONFIG.sessionId
+                        session_id: CONFIG.sessionId,
+                        persona_id: currentPersonaId
                     })
                 });
                 

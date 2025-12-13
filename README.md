@@ -17,7 +17,14 @@
 - 支持自定义人格（温暖伴侣/知识百科）
 - 对话历史持久化，重启后保持上下文
 
-### 💖 主动关怀系统（新功能！）
+### 🎭 AI 人格切换（新功能！）
+- 💕 **暖心伴侣（女友）**：温柔黏人、高共情、细心体贴，偶尔撒娇
+- 🧠 **理性顾问**：沉稳逻辑清晰、客观中立，提供专业建议
+- 😜 **幽默朋友**：开朗风趣、爱开玩笑，用段子化解负面情绪
+- 👂 **安静倾听者**：温柔耐心、少说教，主要以倾听为主
+- ⚙️ **动态切换**：前端下拉框选择，实时生效无需重启
+
+### 💖 主动关怀系统
 - ⏰ **定时推送**：早安、晚安、下班关怀三种类型
 - 🎯 **个性化消息**：AI 根据时间和情境生成温暖内容
 - 📱 **实时推送**：WebSocket 双向通信，消息即时送达
@@ -47,6 +54,10 @@ MyEmotionCompanion/
 ├── websocket_handler.py        # WebSocket 实时推送服务
 ├── requirements.txt            # Python 依赖
 ├── TEST_GUIDE.md              # 完整测试指南
+├── config/
+│   └── persona_config.json    # AI 人格配置文件
+├── utils/
+│   └── persona_utils.py       # 人格加载工具模块
 ├── services/
 │   ├── ai_service.py          # DeepSeek AI 对话服务
 │   └── emotion_analyzer.py    # 百度情感分析服务
@@ -206,7 +217,8 @@ curl http://127.0.0.1:5000/api/scheduler/status
 ```json
 {
   "message": "用户消息",
-  "session_id": "会话ID"
+  "session_id": "会话ID",
+  "persona_id": "人格标识（可选，默认 warm_partner）"
 }
 ```
 
@@ -220,6 +232,29 @@ curl http://127.0.0.1:5000/api/scheduler/status
     "polarity": 2,
     "confidence": 0.95
   }
+}
+```
+
+### 人格列表接口
+
+**GET** `/api/personas`
+
+响应:
+```json
+{
+  "status": "success",
+  "personas": [
+    {
+      "id": "warm_partner",
+      "name": "暖心伴侣（女友）",
+      "emoji": "💕"
+    },
+    {
+      "id": "rational_advisor",
+      "name": "理性顾问",
+      "emoji": "🧠"
+    }
+  ]
 }
 ```
 
@@ -241,8 +276,31 @@ curl http://127.0.0.1:5000/api/scheduler/status
 - `models.py`: 数据库模型（用户偏好）
 - `scheduler.py`: 定时任务调度逻辑
 - `websocket_handler.py`: WebSocket 事件处理
+- `config/persona_config.json`: AI 人格配置文件
+- `utils/persona_utils.py`: 人格加载工具
 - `services/`: 外部服务封装
-  - `ai_service.py`: AI 对话服务
+  - `ai_service.py`: AI 对话服务（支持动态 system_prompt）
+  - `emotion_analyzer.py`: 情感分析服务
+
+### 自定义 AI 人格
+
+编辑 `config/persona_config.json` 添加新的人格配置：
+
+```json
+{
+  "personas": {
+    "your_persona_id": {
+      "name": "人格名称",
+      "prompt": "系统提示词...",
+      "emoji": "😊"
+    }
+  }
+}
+```
+
+无需修改代码，前端会自动加载新人格。
+
+### 添加新的推送类型
   - `emotion_analyzer.py`: 情感分析服务
 
 ### 自定义 AI 人格
