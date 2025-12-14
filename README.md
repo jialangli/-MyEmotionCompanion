@@ -26,6 +26,31 @@
 
 > 通过上述优化，前端代码结构更清晰，易于维护和二次开发，极大提升了项目的可扩展性和工程质量。
 
+## 🌋 火山引擎AI API 集成
+
+项目现已支持火山引擎(豆包)AI服务，可与DeepSeek API无缝切换：
+
+- **双AI提供商支持**：通过环境变量 `AI_PROVIDER` 切换 `deepseek` 或 `volcengine`
+- **使用OpenAI SDK**：火山引擎API兼容OpenAI SDK接口，集成简便
+- **完整功能支持**：支持自定义系统提示词、情感分析、对话历史上下文保留等全部功能
+- **配置方式**：在 `.env` 文件中配置：
+  ```env
+  AI_PROVIDER=volcengine
+  VOLCENGINE_API_KEY=your_api_key
+  VOLCENGINE_MODEL=deepseek-v3-2-251201
+  VOLCENGINE_API_URL=https://ark.cn-beijing.volces.com/api/v3
+  ```
+- **测试方式**：
+  ```bash
+  # 简单测试（无工具）
+  python test_volcengine_simple.py
+  
+  # 完整功能测试
+  python test_volcengine.py
+  ```
+
+> 火山引擎API提供了更稳定、更快的响应速度，尤其适合需要实时推送和高并发的场景。
+
 ## ✨ 核心功能
 
 ### 🤖 智能对话

@@ -1,11 +1,12 @@
-# services/ai_service.py - 处理与DeepSeek API的交互
+# services/ai_service.py - 处理与AI API的交互（支持DeepSeek和火山引擎）
 import requests
 import json
 import config
+from services.volcengine_service import get_volcengine_reply
 
 def get_ai_reply(user_message, conversation_history=None, emotion_data=None, system_prompt=None):
 	"""
-	调用DeepSeek API获取回复。
+	调用AI API获取回复（支持DeepSeek和火山引擎）。
     
 	参数:
 		user_message (str): 用户输入的消息
@@ -15,6 +16,18 @@ def get_ai_reply(user_message, conversation_history=None, emotion_data=None, sys
     
 	返回:
 		str: AI生成的回复内容
+	"""
+	# 根据配置选择API提供商
+	provider = config.AI_PROVIDER.lower()
+	
+	if provider == 'volcengine':
+		return get_volcengine_reply(user_message, conversation_history, emotion_data, system_prompt)
+	else:
+		return _get_deepseek_reply(user_message, conversation_history, emotion_data, system_prompt)
+
+def _get_deepseek_reply(user_message, conversation_history=None, emotion_data=None, system_prompt=None):
+	"""
+	调用DeepSeek API获取回复。
 	"""
 	# 1. 准备API请求的URL和头部
 	api_url = "https://api.deepseek.com/v1/chat/completions"

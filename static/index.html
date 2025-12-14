@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情感陪伴 - MyEmotionCompanion</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h1>💕 情感陪伴伙伴</h1>
+                <div class="persona-selector" style="position: relative; margin-right: 10px;">
+                    <select id="personaSelect"></select>
+                </div>
+            </div>
+            <p>你的专属女朋友，随时陪伴你</p>
+            <button id="themeToggle" class="theme-toggle" title="切换主题">
+                <span id="themeIcon" class="theme-icon">🌙</span>
+                <span class="theme-text">夜间模式</span>
+            </button>
+        </div>
+        <div class="info-bar">
+            会话 ID: <span id="sessionId">loading...</span> | 消息数: <span id="msgCount">0</span> | 
+            <span id="wsStatus" style="display: inline-flex; align-items: center; gap: 4px;">
+                <span id="wsStatusDot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #ccc; margin-right: 2px;"></span>
+                <span id="wsStatusText">离线</span>
+            </span>
+        </div>
+        <div class="emotion-indicator" id="emotionIndicator">
+            <div class="emotion-icon" id="emotionIcon">😊</div>
+            <div class="emotion-text">
+                你现在感到 <span id="emotionLabel">中性</span>
+                <span class="emotion-badge" id="emotionBadge">正面</span>
+            </div>
+            <div class="emotion-confidence" id="emotionConfidence">置信度 90%</div>
+        </div>
+        <div class="chat-box" id="chatBox">
+            <div class="empty-state">
+                <div class="empty-state-icon">👋</div>
+                <div>和我聊天吧～</div>
+            </div>
+        </div>
+        <div class="input-area">
+            <input 
+                type="text" 
+                class="input-field" 
+                id="messageInput" 
+                placeholder="和宝说点什么呀～"
+                autocomplete="off"
+            >
+            <button class="send-btn" id="sendBtn">📤</button>
+        </div>
+    </div>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>
