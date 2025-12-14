@@ -286,33 +286,34 @@
             display: flex;
         }
 
-        /* 主题切换按钮 */
-        .theme-toggle {
-            position: absolute;
-            right: 12px;
-            top: 12px;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.18);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px; /* 胶囊形状 */
-            width: auto; /* 自适应宽度 */
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            z-index: 20;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-            transition: transform 0.12s ease, background 0.12s ease;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .theme-toggle:focus { outline: none; }
-        .theme-toggle:hover { transform: translateY(-2px); }
+/* 主题切换按钮 */
+.theme-toggle {
+    position: relative; /* 改为相对定位，使其进入文档流 */
+    right: auto; /* 清除之前的绝对定位设置 */
+    top: auto;
+    margin: 10px auto 0; /* 上边距10px，左右auto居中 */
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    width: auto;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 20;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    transition: transform 0.12s ease, background 0.12s ease;
+    font-size: 14px;
+    font-weight: 600;
+}
+.theme-toggle:focus { outline: none; }
+.theme-toggle:hover { transform: translateY(-2px); }
 
-        .theme-icon { font-size: 16px; line-height: 1; }
-        .theme-text { display: inline-block; }
+.theme-icon { font-size: 16px; line-height: 1; }
+.theme-text { display: inline-block; }
 
         .emotion-icon {
             font-size: 20px;
@@ -399,6 +400,273 @@
         .message-text.typing-text {
             min-height: 20px;
         }
+
+        /* ===== 移动端响应式设计 ===== */
+        
+        /* 平板设备 (768px 及以下) */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                max-width: 100%;
+                height: 95vh;
+                max-height: none;
+                border-radius: 15px;
+            }
+
+            .header {
+                padding: 15px;
+                border-radius: 15px 15px 0 0;
+            }
+
+            .header h1 {
+                font-size: 20px;
+                margin-bottom: 3px;
+            }
+
+            .header p {
+                font-size: 11px;
+            }
+
+            .header > div {
+                flex-wrap: wrap;
+            }
+
+            .persona-selector select {
+                font-size: 11px !important;
+                padding: 4px 8px !important;
+            }
+
+            .theme-toggle {
+                margin-top: 8px;
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .theme-icon {
+                font-size: 14px;
+            }
+
+            .info-bar {
+                padding: 6px 15px;
+                font-size: 11px;
+            }
+
+            .chat-box {
+                padding: 15px;
+                gap: 12px;
+            }
+
+            .message-text {
+                max-width: 85%;
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            .input-area {
+                padding: 12px 15px;
+                gap: 8px;
+            }
+
+            .input-field {
+                padding: 8px 14px;
+                font-size: 14px;
+                border-radius: 20px;
+            }
+
+            .send-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+
+            .emotion-indicator {
+                padding: 8px 15px;
+                font-size: 12px;
+            }
+
+            .emotion-icon {
+                font-size: 18px;
+            }
+        }
+
+        /* 手机设备 (480px 及以下) */
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                max-width: 100%;
+                height: 97vh;
+                border-radius: 10px;
+            }
+
+            .header {
+                padding: 12px;
+                border-radius: 10px 10px 0 0;
+            }
+
+            .header h1 {
+                font-size: 18px;
+                margin-bottom: 2px;
+                word-break: break-word;
+            }
+
+            .header p {
+                font-size: 10px;
+            }
+
+            .header > div {
+                flex-direction: column;
+                gap: 8px;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .persona-selector {
+                width: 100%;
+                margin-right: 0 !important;
+            }
+
+            .persona-selector select {
+                width: 100%;
+                font-size: 12px !important;
+                padding: 6px 8px !important;
+                max-width: 100%;
+            }
+
+            .theme-toggle {
+                width: 100%;
+                margin-top: 8px;
+                margin-left: auto;
+                margin-right: auto;
+                padding: 8px 12px;
+                font-size: 12px;
+                justify-content: center;
+            }
+
+            .theme-icon {
+                font-size: 14px;
+            }
+
+            .theme-text {
+                font-size: 12px;
+            }
+
+            .info-bar {
+                padding: 5px 10px;
+                font-size: 10px;
+                word-break: break-word;
+                line-height: 1.4;
+            }
+
+            #wsStatus {
+                display: inline-flex !important;
+            }
+
+            .chat-box {
+                padding: 12px;
+                gap: 10px;
+            }
+
+            .message-text {
+                max-width: 90%;
+                padding: 9px 11px;
+                font-size: 13px;
+                line-height: 1.4;
+                border-radius: 12px;
+            }
+
+            .user .message-text {
+                border-radius: 12px 0 12px 12px;
+            }
+
+            .ai .message-text {
+                border-radius: 0 12px 12px 12px;
+            }
+
+            .empty-state-icon {
+                font-size: 36px;
+            }
+
+            .input-area {
+                padding: 10px 12px;
+                gap: 6px;
+                flex-direction: row;
+                border-radius: 0 0 10px 10px;
+            }
+
+            .input-field {
+                padding: 8px 12px;
+                font-size: 14px;
+                border-radius: 18px;
+                min-height: 36px;
+            }
+
+            .send-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+                flex-shrink: 0;
+            }
+
+            .emotion-indicator {
+                padding: 7px 12px;
+                font-size: 11px;
+                gap: 8px;
+            }
+
+            .emotion-icon {
+                font-size: 16px;
+                min-width: 16px;
+            }
+
+            .emotion-badge {
+                padding: 2px 8px;
+                font-size: 10px;
+                margin-left: 3px;
+            }
+
+            .emotion-confidence {
+                font-size: 10px;
+            }
+        }
+
+        /* 超小屏幕 (320px 及以下) */
+        @media (max-width: 320px) {
+            .header h1 {
+                font-size: 16px;
+            }
+
+            .header p {
+                font-size: 9px;
+            }
+
+            .info-bar {
+                font-size: 9px;
+                padding: 4px 8px;
+            }
+
+            .message-text {
+                max-width: 95%;
+                font-size: 12px;
+                padding: 8px 10px;
+            }
+
+            .input-field {
+                font-size: 13px;
+                padding: 7px 10px;
+            }
+
+            .send-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -430,7 +698,11 @@
         </div>
 
         <div class="info-bar">
-            会话 ID: <span id="sessionId">loading...</span> | 消息数: <span id="msgCount">0</span>
+            会话 ID: <span id="sessionId">loading...</span> | 消息数: <span id="msgCount">0</span> | 
+            <span id="wsStatus" style="display: inline-flex; align-items: center; gap: 4px;">
+                <span id="wsStatusDot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #ccc; margin-right: 2px;"></span>
+                <span id="wsStatusText">离线</span>
+            </span>
         </div>
 
         <div class="emotion-indicator" id="emotionIndicator">
@@ -842,6 +1114,19 @@
             msgCountSpan.textContent = messageCount;
         }
 
+        // 新增：更新 WebSocket 状态指示
+        function updateWSStatus(connected) {
+            const statusDot = document.getElementById('wsStatusDot');
+            const statusText = document.getElementById('wsStatusText');
+            if (connected) {
+                statusDot.style.backgroundColor = '#4CAF50';
+                statusText.textContent = '在线';
+            } else {
+                statusDot.style.backgroundColor = '#ccc';
+                statusText.textContent = '离线';
+            }
+        }
+
         // ========== WebSocket 功能 ==========
         
         function initWebSocket() {
@@ -858,6 +1143,7 @@
                 socket.on('connect', () => {
                     console.log('[WebSocket] 已连接到服务器');
                     isSocketConnected = true;
+                    updateWSStatus(true);
                     
                     // 注册用户ID
                     socket.emit('register', { user_id: CONFIG.sessionId });
@@ -872,6 +1158,7 @@
                 socket.on('disconnect', (reason) => {
                     console.log('[WebSocket] 连接已断开:', reason);
                     isSocketConnected = false;
+                    updateWSStatus(false);
                 });
 
                 // 重连中
@@ -883,6 +1170,7 @@
                 socket.on('reconnect', () => {
                     console.log('[WebSocket] 重新连接成功');
                     isSocketConnected = true;
+                    updateWSStatus(true);
                     socket.emit('register', { user_id: CONFIG.sessionId });
                 });
 

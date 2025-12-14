@@ -37,9 +37,10 @@
 
 ### 🎨 现代化界面
 - 响应式设计，支持日间/夜间主题
+- 📱 **移动端优化**：完全适配 320px-1920px 各种屏幕尺寸
 - 打字机效果展示 AI 回复
 - 特殊样式标识主动推送消息
-- 实时连接状态显示
+- 实时连接状态显示（绿点在线/灰点离线）
 
 ---
 
@@ -55,9 +56,9 @@ MyEmotionCompanion/
 ├── requirements.txt            # Python 依赖
 ├── TEST_GUIDE.md              # 完整测试指南
 ├── config/
-│   └── persona_config.json    # AI 人格配置文件
+│   └── persona_config.json    # AI 人格配置文件（支持无代码自定义）
 ├── utils/
-│   └── persona_utils.py       # 人格加载工具模块
+│   └── persona_utils.py       # 人格加载工具模块（动态加载配置）
 ├── services/
 │   ├── ai_service.py          # DeepSeek AI 对话服务
 │   └── emotion_analyzer.py    # 百度情感分析服务
@@ -138,6 +139,8 @@ Windows PowerShell:
 ### 5. 访问应用
 
 - **主页面**: http://127.0.0.1:5000
+  - 💻 PC 端：完整功能体验
+  - 📱 移动端：自适应布局，流畅使用体验
 - **健康检查**: http://127.0.0.1:5000/health
 - **测试页面**: http://127.0.0.1:5000/test
 
@@ -258,6 +261,24 @@ curl http://127.0.0.1:5000/api/scheduler/status
 }
 ```
 
+### 人格配置
+
+无需 API 调用，直接编辑 `config/persona_config.json` 即可自定义 AI 人格：
+
+```json
+{
+  "personas": {
+    "your_persona_id": {
+      "name": "人格名称",
+      "system_prompt": "AI 系统提示词，定义性格和行为...",
+      "emoji": "😊"
+    }
+  }
+}
+```
+
+修改后前端自动加载新人格，无需重启服务。
+
 ### 用户推送偏好
 
 **GET/POST** `/api/user/schedule`
@@ -284,6 +305,8 @@ curl http://127.0.0.1:5000/api/scheduler/status
 
 ### 自定义 AI 人格
 
+**方式一：配置文件法（推荐，无需重启）**
+
 编辑 `config/persona_config.json` 添加新的人格配置：
 
 ```json
@@ -291,21 +314,20 @@ curl http://127.0.0.1:5000/api/scheduler/status
   "personas": {
     "your_persona_id": {
       "name": "人格名称",
-      "prompt": "系统提示词...",
+      "system_prompt": "系统提示词定义 AI 的性格和行为...",
       "emoji": "😊"
     }
   }
 }
 ```
 
-无需修改代码，前端会自动加载新人格。
+保存后前端自动加载，无需修改代码或重启服务。
+
+**方式二：代码修改法**
+
+编辑 `services/ai_service.py` 中的 `get_ai_reply()` 函数，自定义默认的 `system_prompt`。
 
 ### 添加新的推送类型
-  - `emotion_analyzer.py`: 情感分析服务
-
-### 自定义 AI 人格
-
-编辑 `services/ai_service.py` 中的 `system_prompt` 变量来调整 AI 的性格和回复风格。
 
 ### 添加新的推送类型
 
@@ -346,10 +368,17 @@ Windows PowerShell:
 - ⚠️ 定期更换 API Key 和 Secret Key
 - ⚠️ 生产环境使用 HTTPS 和 WSS
 
+### 移动端使用
+- ✅ 完全支持手机、平板等各种尺寸设备
+- ✅ 自动适配 320px 超小屏到 1920px 超大屏
+- ✅ 触摸友好的输入框和按钮
+- 📝 建议在手机上添加到主屏幕（Safari "添加到主屏幕" / Chrome "安装应用"）
+
 ### 性能优化
 - 建议使用 Gunicorn + Nginx 部署生产环境
 - 配置日志轮转避免日志文件过大
 - 定期清理过期的对话历史
+- 使用 CDN 加速静态资源（Socket.IO 库）
 
 ### 代理设置
 - 如果访问外部 API 失败，检查网络代理配置
