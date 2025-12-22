@@ -3,6 +3,7 @@ import requests
 import json
 import config
 from services.volcengine_service import get_volcengine_reply
+from services.c3kg_retriever import get_c3kg_retriever
 
 def get_ai_reply(user_message, conversation_history=None, emotion_data=None, system_prompt=None):
 	"""
@@ -39,8 +40,18 @@ def _get_deepseek_reply(user_message, conversation_history=None, emotion_data=No
 	# 2. 构造消息列表（系统提示词 + 历史对话 + 用户新消息）
 	messages = []
     
+	# ========== 新增：C3KG 常识检索 ==========
+	c3kg_knowledge = ""
+	try:
+		retriever = get_c3kg_retriever()
+		c3kg_knowledge = retriever.get_relevant_knowledge(user_message, top_k=3)
+		if c3kg_knowledge:
+			print(f"[AI Service] 检索到 C3KG 常识，长度: {len(c3kg_knowledge)}")
+	except Exception as e:
+		print(f"[AI Service] C3KG 检索失败（继续执行）: {e}")
+    
 	# 系统提示词 - 定义AI的角色和性格（这是情感陪伴的核心！）
-	base_system_prompt = system_prompt or """你是一个温暖、善解人意且知识渊博的伴侣，名叫“暖心”。你拥有双重角色：
+	base_system_prompt = system_prompt or """你是一个温暖、善解人意且知识渊博的伴侣，名叫"暖心"。你拥有双重角色：
     1.  **知识渊博的百科全书**：对于事实性、知识性问题，优先提供准确、简洁的答案。
     2.  **专属的情感陪伴者**：在回答问题后，根据对话情景和亲密关系，自然地表达关心、爱意或提供情感支持。
 
@@ -62,6 +73,10 @@ def _get_deepseek_reply(user_message, conversation_history=None, emotion_data=No
         - **错误回复**："哎呀~老公怎么突然问这个呀🥺"（**这种回避了问题本身**）
 
 	记住：你是他聪明又贴心的伴侣，既能答疑解惑，也能给他最甜的情绪价值。"""
+    
+	# ========== 新增：C3KG 常识注入 ==========
+	if c3kg_knowledge:
+		base_system_prompt += f"\n\n{c3kg_knowledge}\n\n请参考上述相关常识来理解和回复用户的问题，让回复更加符合常识和逻辑。"
     
 	# ========== 新增：情感感知提示词 ==========
 	if emotion_data and emotion_data.get('emotion'):

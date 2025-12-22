@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 使用OpenAI SDK测试火山引擎API - 不使用web_search工具

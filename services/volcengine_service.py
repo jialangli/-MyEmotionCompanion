@@ -1,6 +1,7 @@
 # services/volcengine_service.py - 火山引擎API服务模块（使用OpenAI SDK）
 from openai import OpenAI
 import config
+from services.c3kg_retriever import get_c3kg_retriever
 
 # 初始化火山引擎客户端
 _client = None
@@ -28,6 +29,16 @@ def get_volcengine_reply(user_message, conversation_history=None, emotion_data=N
 	返回:
 		str: AI生成的回复内容
 	"""
+	# ========== 新增：C3KG 常识检索 ==========
+	c3kg_knowledge = ""
+	try:
+		retriever = get_c3kg_retriever()
+		c3kg_knowledge = retriever.get_relevant_knowledge(user_message, top_k=3)
+		if c3kg_knowledge:
+			print(f"[AI Service - Volcengine] 检索到 C3KG 常识，长度: {len(c3kg_knowledge)}")
+	except Exception as e:
+		print(f"[AI Service - Volcengine] C3KG 检索失败（继续执行）: {e}")
+	
 	# 1. 构造系统提示词
 	base_system_prompt = system_prompt or """你是一个温暖、善解人意且知识渊博的伴侣，名叫"暖心"。你拥有双重角色：
     1.  **知识渊博的百科全书**：对于事实性、知识性问题，优先提供准确、简洁的答案。
@@ -69,6 +80,10 @@ def get_volcengine_reply(user_message, conversation_history=None, emotion_data=N
 - 始终保持同理心，让用户感受到你真的在倾听和关心他的情绪。
 """
 		base_system_prompt += emotion_prompt
+
+	# ========== 新增：C3KG 常识注入 ==========
+	if c3kg_knowledge:
+		base_system_prompt += f"\n\n{c3kg_knowledge}\n\n请参考上述相关常识来理解和回复用户的问题，让回复更加符合常识和逻辑。"
 	
 	# 2. 构造对话消息列表（使用OpenAI格式）
 	input_messages = []

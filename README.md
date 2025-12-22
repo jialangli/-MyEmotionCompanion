@@ -58,6 +58,11 @@
 - 支持自定义人格（温暖伴侣/知识百科）
 - 对话历史持久化，重启后保持上下文
 
+### 🧠 C3KG 常识增强（新功能）
+- **自动常识检索**：用户发送消息后，系统会从 C3KG（ATOMIC_Chinese）中匹配相关事件/常识
+- **Prompt 注入**：将检索到的常识注入到 LLM 的系统提示词中，让回复更符合常识与逻辑
+- **结构化知识库**：将原始三元组整理为可检索的 JSON（事件 + 常识 + 对话流 + 关键词）
+
 ### 🎭 AI 人格切换（新功能！）
 - 💕 **暖心伴侣（女友）**：温柔黏人、高共情、细心体贴，偶尔撒娇
 - 🧠 **理性顾问**：沉稳逻辑清晰、客观中立，提供专业建议
@@ -100,9 +105,11 @@ MyEmotionCompanion/
 │   └── persona_config.json    # AI 人格配置文件（支持无代码自定义）
 ├── utils/
 │   └── persona_utils.py       # 人格加载工具模块（动态加载配置）
+│   └── c3kg_converter.py      # C3KG 数据转换：生成结构化 c3kg_data.json
 ├── services/
 │   ├── ai_service.py          # DeepSeek AI 对话服务
 │   └── emotion_analyzer.py    # 百度情感分析服务
+│   └── c3kg_retriever.py      # C3KG 知识检索：匹配常识并格式化注入 Prompt
 ├── templates/
 │   ├── index.html             # 主聊天界面（含 WebSocket 客户端）
 │   └── test.html              # 主动关怀功能测试页面
@@ -111,6 +118,8 @@ MyEmotionCompanion/
 │   ├── stop_app.sh            # Linux/Mac 停止脚本
 │   ├── start_app.ps1          # Windows PowerShell 启动脚本
 │   └── stop_app.ps1           # Windows PowerShell 停止脚本
+│   └── test_c3kg.py           # C3KG 转换/检索测试脚本
+│   └── test_c3kg_integration.py  # C3KG 集成测试：检索→注入→(可选)真实LLM调用
 └── databases/
     ├── chat_history.db        # 对话历史数据库
     └── companion.db           # 用户偏好数据库
@@ -184,6 +193,45 @@ Windows PowerShell:
   - 📱 移动端：自适应布局，流畅使用体验
 - **健康检查**: http://127.0.0.1:5000/health
 - **测试页面**: http://127.0.0.1:5000/test
+
+---
+
+## 🧠 C3KG 常识增强：数据转换与测试
+
+### 1. 原始数据文件
+
+请确保以下文件存在于 `data/` 目录：
+- `data/ATOMIC_Chinese.tsv`
+- `data/head_phrase.csv`
+- `data/head_shortSentence.csv`
+
+### 2. 生成结构化知识库（首次必须执行）
+
+```bash
+python utils/c3kg_converter.py
+```
+
+运行后会生成：`data/c3kg_data.json`（体积较大，转换可能需要几分钟）。
+
+### 3. 检索模块单测
+
+```bash
+python scripts/test_c3kg.py
+```
+
+### 4. 直接用项目做集成验证（推荐）
+
+该脚本会展示：**用户消息 → C3KG 检索结果 → Prompt 注入预览**，并可选执行一次真实 LLM 调用（需要配置 API Key）。
+
+```bash
+python scripts/test_c3kg_integration.py
+```
+
+### 5. 运行时行为（无需额外调用）
+
+在 `services/ai_service.py`（DeepSeek）与 `services/volcengine_service.py`（火山引擎）中已自动集成：
+- 每次用户消息进入时会触发 C3KG 检索
+- 若检索到常识，会自动注入到系统 Prompt 中
 
 ---
 
