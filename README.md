@@ -113,6 +113,17 @@ MyEmotionCompanion/
 ├── templates/
 │   ├── index.html             # 主聊天界面（含 WebSocket 客户端）
 │   └── test.html              # 主动关怀功能测试页面
+├── backend/                   # ✅ 新：工厂模式 + 分层后端（运行在 5001）
+│   ├── app/
+│   │   ├── __init__.py         # 应用工厂 create_app
+│   │   ├── config/             # 配置层（settings.py、persona_config.json）
+│   │   ├── routes/             # 路由层（chat/persona/user/system）
+│   │   ├── services/           # 服务层（llm/emotion/socketio/scheduler）
+│   │   ├── models/             # 模型层（chat_record/user_memory）
+│   │   └── utils/              # 工具层（common_sense/request_utils）
+│   ├── requirements.txt        # backend 依赖（对齐现有项目）
+│   ├── run.py                  # ✅ 工厂后端启动入口（socketio.run）
+│   └── chat_form_5001.ps1      # ✅ PowerShell 方式A 调用 /api/chat（5001）
 ├── scripts/
 │   ├── start_app.sh           # Linux/Mac 启动脚本
 │   ├── stop_app.sh            # Linux/Mac 停止脚本
@@ -174,6 +185,12 @@ BAIDU_SECRET_KEY=your-baidu-secret-key
 python app.py
 ```
 
+**方式一（新后端，推荐）：运行工厂模式后端（5001）**
+
+```bash
+python backend/run.py
+```
+
 **方式二：使用启动脚本（推荐）**
 
 Linux/Mac:
@@ -194,7 +211,26 @@ Windows PowerShell:
 - **健康检查**: http://127.0.0.1:5000/health
 - **测试页面**: http://127.0.0.1:5000/test
 
+- **主页面（新后端 / 工厂模式）**: http://127.0.0.1:5001
+- **健康检查（新后端）**: http://127.0.0.1:5001/health
+
 ---
+
+## 🧱 后端重构（工厂模式 + 分层架构）（5001）
+
+本项目新增 `backend/` 目录，采用 **Flask 应用工厂 + 分层架构**，并把以下能力迁移到新后端：
+- **/api/chat**：LLM（DeepSeek/火山）调用 + C3KG 常识注入 + 情感提示注入 + 聊天记录落库
+- **/api/personas**：人格列表读取（`backend/app/config/persona_config.json`）
+- **/api/user/schedule**：用户偏好（SQLite `companion.db`）
+- **WebSocket（SocketIO）**：connect/register/room 推送 + 状态统计
+- **Scheduler（APScheduler）**：任务恢复 + 状态查询
+
+### 已迁移状态接口
+- `GET http://127.0.0.1:5001/api/websocket/status`
+- `GET http://127.0.0.1:5001/api/scheduler/status`
+
+### 配置说明（.env）
+出于安全原因 `.env` 通常不会提交到仓库。新后端会优先读取 `backend/.env`，若不存在则会读取项目根目录的 `.env`（与旧后端保持兼容）。
 
 ## 🧠 C3KG 常识增强：数据转换与测试
 
@@ -232,6 +268,20 @@ python scripts/test_c3kg_integration.py
 在 `services/ai_service.py`（DeepSeek）与 `services/volcengine_service.py`（火山引擎）中已自动集成：
 - 每次用户消息进入时会触发 C3KG 检索
 - 若检索到常识，会自动注入到系统 Prompt 中
+
+---
+
+## 🧪 PowerShell 调用后端（推荐方式A：form-urlencoded）
+
+Windows PowerShell 下直接发 JSON（尤其包含中文）有时会遇到编码/解析差异。推荐使用 **方式A：`application/x-www-form-urlencoded`**，稳定可靠。
+
+### 方式A：一键脚本（5001 新后端）
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\backend\chat_form_5001.ps1 -Message "某人完全放弃某物" -SessionId "ps_form" -PersonaId "warm_partner"
+```
+
+你也可以修改 `-BaseUrl` 指向其他地址（默认 `http://127.0.0.1:5001`）。
 
 ---
 

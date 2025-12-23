@@ -1,0 +1,12 @@
+# 先对齐当前项目可运行依赖（后续重构稳定后再做精简/分环境）
+APScheduler==3.10.4
+Flask==3.1.2
+flask-cors==6.0.1
+Flask-SocketIO==5.3.6
+openai==2.11.0
+python-dotenv==1.2.1
+python-socketio==5.11.1
+requests==2.32.5
+pytz==2025.2
+
+

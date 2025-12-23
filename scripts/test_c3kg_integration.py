@@ -1,5 +1,6 @@
-# scripts/test_c3kg_integration.py - 项目内集成测试：C3KG 检索 -> Prompt 注入 ->（可选）LLM
 """
+scripts/test_c3kg_integration.py - 项目内集成测试：C3KG 检索 -> Prompt 注入 ->（可选）LLM
+
 目标：
 1) 直接在项目里跑：验证 “用户消息 -> C3KG 检索 -> 注入 Prompt” 的效果（可视化）。
 2) 若已配置 LLM Key（DeepSeek 或火山引擎），可选执行一次真实调用。
@@ -11,7 +12,7 @@
 
 import os
 import sys
-from typing import List, Optional
+from typing import List, Optional, Callable
 
 
 def _project_root() -> str:
@@ -24,12 +25,13 @@ def _print_sep(title: str) -> None:
     print("=" * 70)
 
 
-def _try_import_ai_service():
+def _try_import_ai_service() -> Optional[Callable[..., str]]:
     """
     尝试导入项目 AI 服务（会依赖 config -> python-dotenv）。
     导入失败时返回 None，不影响 C3KG 检索链路测试。
     """
     try:
+        sys.path.insert(0, _project_root())
         from services.ai_service import get_ai_reply  # type: ignore
 
         return get_ai_reply
@@ -40,13 +42,9 @@ def _try_import_ai_service():
 
 
 def _build_prompt_preview(user_message: str, c3kg_knowledge: str) -> str:
-    """
-    复刻 ai_service.py 中的注入逻辑：把检索到的常识拼到 system prompt 末尾。
-    这里只做“可视化预览”，不改变线上逻辑。
-    """
     base = "【SYSTEM】你是一个温暖、善解人意且知识渊博的伴侣（略）。"
     if not c3kg_knowledge:
-        return base + "\n\n【C3KG】(未检索到相关常识)"
+        return base + "\n\n【C3KG】(未检索到相关常识)\n\n【USER】" + user_message
     return (
         base
         + "\n\n"
@@ -60,7 +58,6 @@ def _build_prompt_preview(user_message: str, c3kg_knowledge: str) -> str:
 def run_retrieval_demo(test_messages: List[str]) -> None:
     _print_sep("步骤 1/2：C3KG 检索 + Prompt 注入预览（不调用 LLM）")
 
-    # 延迟导入，确保脚本可在任意 cwd 运行
     sys.path.insert(0, _project_root())
     from services.c3kg_retriever import get_c3kg_retriever  # type: ignore
 
@@ -89,7 +86,6 @@ def run_optional_llm_call(user_message: str) -> None:
         print("[跳过] 未能导入 AI 服务，因此跳过真实 LLM 调用。")
         return
 
-    # 尝试调用一次真实 LLM（如果未配置 key，项目本身可能会报错或返回兜底文案）
     try:
         reply = get_ai_reply(user_message=user_message, conversation_history=[], emotion_data=None, system_prompt=None)
         print(f"[用户消息] {user_message}")
@@ -100,9 +96,8 @@ def run_optional_llm_call(user_message: str) -> None:
 
 
 def main():
-    # 让输出尽量不受编码影响（Windows 控制台常见为 GBK）
     try:
-        sys.stdout.reconfigure(encoding="utf-8")  # py3.7+
+        sys.stdout.reconfigure(encoding="utf-8")
     except Exception:
         pass
 
@@ -114,8 +109,6 @@ def main():
     ]
 
     run_retrieval_demo(test_messages)
-
-    # 可选：走一次真实调用（只用第一条，避免花费太多 token）
     run_optional_llm_call("我今天有点沮丧，想放弃这份工作")
 
     _print_sep("完成")
@@ -124,5 +117,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

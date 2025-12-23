@@ -1,7 +1,8 @@
 // constants.js
 export const CONFIG = {
-    apiUrl: 'http://127.0.0.1:5000/api/chat',
-    wsUrl: 'http://127.0.0.1:5000',
+    // 使用相对地址：前端打开在 5001 时自动请求 5001；打开在 5000 时自动请求 5000
+    apiUrl: `${window.location.origin}/api/chat`,
+    wsUrl: `${window.location.origin}`,
     maxRetries: 3,
     retryDelay: 1000
 };
