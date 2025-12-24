@@ -232,6 +232,10 @@ Windows PowerShell:
 ### 配置说明（.env）
 出于安全原因 `.env` 通常不会提交到仓库。新后端会优先读取 `backend/.env`，若不存在则会读取项目根目录的 `.env`（与旧后端保持兼容）。
 
+**后端配置示例文件（可提交）**：
+- 使用 `backend/env.example` 作为示例
+- 复制为 `backend/.env` 后再填写你的 Key（PowerShell）：`Copy-Item .\\backend\\env.example .\\backend\\.env`
+
 ## 🧠 C3KG 常识增强：数据转换与测试
 
 ### 1. 原始数据文件
